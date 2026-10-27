@@ -13,3 +13,4 @@ load/results/
 artifacts/
 cdk.context.json
 web/till/public/config.json
+__pycache__/

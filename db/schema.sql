@@ -159,7 +159,9 @@ BEGIN
         VatRate        decimal(5, 2)  '$.vatRate',
         GrossCents     bigint         '$.grossCents',
         VatCents       bigint         '$.vatCents'
-    ) AS line;
+    ) AS line
+    -- Keeps the foreign key check a seek on this entry; OPENJSON's 50-row guess chose a scan that deadlocked across tills.
+    OPTION (LOOP JOIN);
 
     COMMIT;
 END;

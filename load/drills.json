@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Baseline (4 journal consumers)",
+    "start": "2026-10-27T20:11:52Z",
+    "end": "2026-10-27T20:21:52Z"
+  },
+  {
+    "name": "Slow partner (2 s)",
+    "start": "2026-10-27T20:22:55Z",
+    "end": "2026-10-27T20:27:56Z"
+  },
+  {
+    "name": "Partner outage",
+    "start": "2026-10-27T20:31:29Z",
+    "end": "2026-10-27T20:35:30Z"
+  },
+  {
+    "name": "Poison messages",
+    "start": "2026-10-27T20:38:31Z",
+    "end": "2026-10-27T20:38:35Z"
+  },
+  {
+    "name": "Burst over limit",
+    "start": "2026-10-27T20:39:36Z",
+    "end": "2026-10-27T20:40:37Z"
+  },
+  {
+    "name": "Baseline (16 journal consumers)",
+    "start": "2026-10-27T20:49:04Z",
+    "end": "2026-10-27T20:59:05Z"
+  }
+]

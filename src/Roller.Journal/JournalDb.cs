@@ -38,7 +38,7 @@ internal sealed class SqlJournalDb(string connectionString) : IJournalDb
         }
     }
 
-    private async Task<RecordedSale> RecordOnceAsync(Sale sale, CancellationToken ct)
+    internal async Task<RecordedSale> RecordOnceAsync(Sale sale, CancellationToken ct)
     {
         var signature = sale.Signature ?? throw new ArgumentException($"Sale {sale.SaleId} has no signature", nameof(sale));
 

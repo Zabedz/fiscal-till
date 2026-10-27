@@ -4,8 +4,8 @@ namespace Roller.Journal;
 internal sealed record JournalSettings(
     string QueueUrl, string SalesTable, string ReceiptsBucket, string ReceiptSender, string ConnectionString, int Consumers)
 {
-    // Concurrency is also capped by the number of tills with queued sales; 4 suits a laptop demo.
-    private const int DefaultConsumers = 4;
+    // Measured at about 2 sales a second each from a laptop, so 16 keep up with the slow drill's 20 a second.
+    private const int DefaultConsumers = 16;
 
     public static JournalSettings From(IConfiguration config) => new(
         Required(config, "JOURNAL_QUEUE_URL"),

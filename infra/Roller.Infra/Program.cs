@@ -32,6 +32,7 @@ new TillStack(app, "RollerTill", new TillStackProps
     Description = "Till pipeline: API, sales table, fiscalisation and journal queues, receipts bucket.",
     Venues = VenueDirectory.Load().All,
     AllowedOrigin = "http://localhost:4200",
+    Drills = DrillWindow.Load("load/drills.json"),
 });
 
 app.Synth();

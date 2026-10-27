@@ -8,6 +8,8 @@ namespace Roller.Journal.Tests;
 public class SqlJournalDbTests
 {
     private const int ConcurrentSales = 50;
+    private const int ConcurrentTills = 20;
+    private const int SalesPerTill = 10;
 
     private static readonly string? ConnectionString = Environment.GetEnvironmentVariable("JOURNAL_DB");
 
@@ -23,7 +25,30 @@ public class SqlJournalDbTests
 
         Assert.Equal(Enumerable.Range(1, ConcurrentSales), numbers.Select(recorded => recorded.ReceiptNumber).Order());
         Assert.All(numbers, recorded => Assert.False(recorded.AlreadyRecorded));
-        Assert.Equal(0, await MissingNumbersAsync(venue));
+        Assert.Equal((ConcurrentSales, 0), await ReceiptsAndMissingAsync(venue));
+    }
+
+    [Fact]
+    public async Task ConcurrentSalesOnManyTillsDoNotDeadlock()
+    {
+        Assert.SkipWhen(ConnectionString is null, "JOURNAL_DB is not set; start the database with scripts/journal-db.sh up");
+        var venue = NewVenueId();
+        var journal = new SqlJournalDb(ConnectionString!);
+        var tills = Enumerable.Range(1, ConcurrentTills).Select(number => $"T{number:00}").ToList();
+
+        // One sale at a time per till, as the FIFO queue delivers them, and no deadlock retries: a deadlock victim fails the test.
+        await Task.WhenAll(tills.Select(till => Task.Run(async () =>
+        {
+            for (var sale = 0; sale < SalesPerTill; sale++)
+            {
+                await journal.RecordOnceAsync(TestSales.Signed(NewSaleId(), venue, till), TestContext.Current.CancellationToken);
+            }
+        })));
+
+        foreach (var till in tills)
+        {
+            Assert.Equal((SalesPerTill, 0), await ReceiptsAndMissingAsync(venue, till));
+        }
     }
 
     [Fact]
@@ -109,11 +134,11 @@ public class SqlJournalDbTests
 
     private const int StringTruncated = 2628;
 
-    private static async Task<int> MissingNumbersAsync(string venue)
+    private static async Task<(int Receipts, int MissingNumbers)> ReceiptsAndMissingAsync(string venue, string till = "T01")
     {
         await using var connection = new SqlConnection(ConnectionString);
-        return await connection.ExecuteScalarAsync<int>(
-            "SELECT MissingNumbers FROM dbo.ReceiptGaps WHERE TillKey = @TillKey", new { TillKey = $"{venue}-T01" });
+        return await connection.QuerySingleAsync<(int, int)>(
+            "SELECT Receipts, MissingNumbers FROM dbo.ReceiptGaps WHERE TillKey = @TillKey", new { TillKey = $"{venue}-{till}" });
     }
 
     // Each test uses its own venue id, so its till starts at receipt 1 on a database that already holds other runs.

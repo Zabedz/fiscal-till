@@ -1,5 +1,5 @@
 // RollerTill stack, removed by cdk destroy RollerTill: REST API with per-venue keys, the sale and fiscalise
-// Lambdas, sales table, fiscalise and journal queues with DLQs, receipts bucket and DLQ alarms.
+// Lambdas, sales table, fiscalise and journal queues with DLQs, receipts bucket, DLQ alarms and the dashboard.
 
 using Amazon.CDK;
 using Amazon.CDK.AWS.APIGateway;
@@ -24,6 +24,7 @@ public sealed class TillStackProps : StackProps
 {
     public required IReadOnlyList<Venue> Venues { get; init; }
     public required string AllowedOrigin { get; init; }
+    public IReadOnlyList<DrillWindow> Drills { get; init; } = [];
 }
 
 public sealed class TillStack : Stack
@@ -236,8 +237,10 @@ public sealed class TillStack : Stack
             Service = "sns",
             Resource = GuardrailsStack.AlarmTopicName,
         }, this));
-        AlarmWhenNotEmpty("FiscaliseDlq", fiscaliseDlq, alarmTopic);
-        AlarmWhenNotEmpty("JournalDlq", journalDlq, alarmTopic);
+        Alarm[] alarms = [AlarmWhenNotEmpty("FiscaliseDlq", fiscaliseDlq, alarmTopic), AlarmWhenNotEmpty("JournalDlq", journalDlq, alarmTopic)];
+
+        TillDashboard.Add(this, new DashboardParts(
+            api, createSale, worker, partner, fiscaliseQueue, fiscaliseDlq, journalQueue, journalDlq, alarms, props.Drills));
 
         new CfnOutput(this, "ApiUrl", new CfnOutputProps { Value = api.Url });
         new CfnOutput(this, "ApiKeyIds", new CfnOutputProps { Value = venueKeys });
@@ -277,7 +280,7 @@ public sealed class TillStack : Stack
             }),
         });
 
-    private void AlarmWhenNotEmpty(string id, Queue dlq, ITopic topic)
+    private Alarm AlarmWhenNotEmpty(string id, Queue dlq, ITopic topic)
     {
         var alarm = new Alarm(this, $"{id}NotEmpty", new AlarmProps
         {
@@ -293,5 +296,6 @@ public sealed class TillStack : Stack
             TreatMissingData = TreatMissingData.NOT_BREACHING,
         });
         alarm.AddAlarmAction(new SnsAction(topic));
+        return alarm;
     }
 }
