@@ -6,4 +6,7 @@
     <PackageReference Include="Amazon.CDK.Lib" />
     <PackageReference Include="Constructs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Roller.Core\Roller.Core.csproj" />
+  </ItemGroup>
 </Project>

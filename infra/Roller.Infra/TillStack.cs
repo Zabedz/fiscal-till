@@ -13,13 +13,14 @@ using Amazon.CDK.AWS.S3;
 using Amazon.CDK.AWS.SNS;
 using Amazon.CDK.AWS.SQS;
 using Constructs;
+using Roller.Core;
 using DynamoAttribute = Amazon.CDK.AWS.DynamoDB.Attribute;
 
 namespace Roller.Infra;
 
 public sealed class TillStackProps : StackProps
 {
-    public required IReadOnlyList<VenueConfig> Venues { get; init; }
+    public required IReadOnlyList<Venue> Venues { get; init; }
     public required string AllowedOrigin { get; init; }
 }
 
@@ -180,6 +181,8 @@ public sealed class TillStack : Stack
         journalQueue.GrantSendMessages(worker);
         worker.AddEventSource(new SqsEventSource(fiscaliseQueue, new SqsEventSourceProps
         {
+            // Off until the worker signs; accepted sales wait in the queue.
+            Enabled = false,
             BatchSize = 10,
             ReportBatchItemFailures = true,
             MaxConcurrency = MaxWorkerInvocations,

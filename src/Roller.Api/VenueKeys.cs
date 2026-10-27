@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using Roller.Core;
 
 namespace Roller.Api;
 
@@ -8,8 +9,7 @@ internal sealed class VenueKeys(IReadOnlyDictionary<string, string> venueByKeyId
 {
     public static VenueKeys FromEnvironment()
     {
-        var json = Environment.GetEnvironmentVariable("VENUE_API_KEYS")
-            ?? throw new InvalidOperationException("VENUE_API_KEYS is not set");
+        var json = Env.Required("VENUE_API_KEYS");
         var keyIdByVenue = JsonSerializer.Deserialize<Dictionary<string, string>>(json)
             ?? throw new InvalidOperationException($"VENUE_API_KEYS is not a JSON object: {json}");
 

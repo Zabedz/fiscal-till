@@ -1,2 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\config\*.json" LogicalName="%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Roller.Core.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.DynamoDBv2" />
+  </ItemGroup>
 </Project>

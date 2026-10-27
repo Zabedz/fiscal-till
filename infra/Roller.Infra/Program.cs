@@ -2,6 +2,7 @@
 // stacks in eu-west-2. cdk.json runs it with dotnet run after publishing the Lambdas.
 
 using Amazon.CDK;
+using Roller.Core;
 using Roller.Infra;
 using CdkEnvironment = Amazon.CDK.Environment;
 
@@ -29,7 +30,7 @@ new TillStack(app, "RollerTill", new TillStackProps
 {
     Env = env,
     Description = "Till pipeline: API, sales table, fiscalisation and journal queues, receipts bucket.",
-    Venues = VenueConfig.Load("config/venues.json"),
+    Venues = VenueDirectory.Load().All,
     AllowedOrigin = "http://localhost:4200",
 });
 

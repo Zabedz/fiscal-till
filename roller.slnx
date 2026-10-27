@@ -7,4 +7,8 @@
     <Project Path="src/Roller.Core/Roller.Core.csproj" />
     <Project Path="src/Roller.Fiscalise/Roller.Fiscalise.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Roller.Api.Tests/Roller.Api.Tests.csproj" />
+    <Project Path="tests/Roller.Core.Tests/Roller.Core.Tests.csproj" />
+  </Folder>
 </Solution>

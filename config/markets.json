@@ -1,0 +1,41 @@
+[
+  {
+    "market": "FR",
+    "currency": "EUR",
+    "categories": {
+      "admission": [{ "from": "2024-01-01", "rate": 10 }],
+      "food-onsite": [{ "from": "2024-01-01", "rate": 10 }],
+      "soft-drink-onsite": [{ "from": "2024-01-01", "rate": 10 }],
+      "alcohol": [{ "from": "2024-01-01", "rate": 20 }],
+      "merchandise": [{ "from": "2024-01-01", "rate": 20 }],
+      "staple-goods": [{ "from": "2024-01-01", "rate": 5.5 }],
+      "food-takeaway": [{ "from": "2024-01-01", "rate": 10 }]
+    }
+  },
+  {
+    "market": "DE",
+    "currency": "EUR",
+    "categories": {
+      "admission": [{ "from": "2024-01-01", "rate": 19 }],
+      "food-onsite": [{ "from": "2024-01-01", "rate": 19 }, { "from": "2026-01-01", "rate": 7 }],
+      "soft-drink-onsite": [{ "from": "2024-01-01", "rate": 19 }],
+      "alcohol": [{ "from": "2024-01-01", "rate": 19 }],
+      "merchandise": [{ "from": "2024-01-01", "rate": 19 }],
+      "staple-goods": [{ "from": "2024-01-01", "rate": 7 }],
+      "food-takeaway": [{ "from": "2024-01-01", "rate": 7 }]
+    }
+  },
+  {
+    "market": "AT",
+    "currency": "EUR",
+    "categories": {
+      "admission": [{ "from": "2024-01-01", "rate": 13 }],
+      "food-onsite": [{ "from": "2024-01-01", "rate": 10 }],
+      "soft-drink-onsite": [{ "from": "2024-01-01", "rate": 20 }],
+      "alcohol": [{ "from": "2024-01-01", "rate": 20 }],
+      "merchandise": [{ "from": "2024-01-01", "rate": 20 }],
+      "staple-goods": [{ "from": "2024-01-01", "rate": 10 }, { "from": "2026-07-01", "rate": 4.9 }],
+      "food-takeaway": [{ "from": "2024-01-01", "rate": 10 }]
+    }
+  }
+]
