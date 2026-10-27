@@ -18,6 +18,6 @@ internal sealed class SqsFiscaliseQueue(IAmazonSQS sqs, string queueUrl) : IFisc
         sqs.SendMessageAsync(new SendMessageRequest
         {
             QueueUrl = queueUrl,
-            MessageBody = JsonSerializer.Serialize(new FiscaliseMessage(sale.SaleId, sale.VenueId, sale.TillId), StrictJson.Options),
+            MessageBody = JsonSerializer.Serialize(new SaleMessage(sale.SaleId, sale.VenueId, sale.TillId), StrictJson.Options),
         }, ct);
 }

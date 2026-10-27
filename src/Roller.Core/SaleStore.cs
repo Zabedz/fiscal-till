@@ -10,6 +10,12 @@ public interface ISaleStore
     Task<Sale?> PutIfAbsentAsync(Sale sale, CancellationToken ct);
 
     Task<Sale?> GetAsync(string saleId, CancellationToken ct);
+
+    /// <summary>PENDING to SIGNED, only if the sale is unchanged since it was read; false when another writer got there first.</summary>
+    Task<bool> MarkSignedAsync(Sale sale, Signature signature, CancellationToken ct);
+
+    /// <summary>PENDING to FAILED, for a sale the partner rejected; false when the sale had already moved on.</summary>
+    Task<bool> MarkFailedAsync(Sale sale, string reason, CancellationToken ct);
 }
 
 public sealed class DynamoSaleStore(IAmazonDynamoDB dynamo, string tableName) : ISaleStore
@@ -46,6 +52,45 @@ public sealed class DynamoSaleStore(IAmazonDynamoDB dynamo, string tableName) : 
 
         return response.Item is { Count: > 0 } item ? SaleItem.ToSale(item) : null;
     }
+
+    public Task<bool> MarkSignedAsync(Sale sale, Signature signature, CancellationToken ct) =>
+        TransitionAsync(sale, SaleStatus.Signed, "SignatureDeviceId = :device, SignatureCounter = :counter, SignatureValue = :value, SignedAt = :signedAt",
+            new()
+            {
+                [":device"] = new() { S = signature.DeviceId },
+                [":counter"] = new() { N = signature.Counter.ToString(CultureInfo.InvariantCulture) },
+                [":value"] = new() { S = signature.Value },
+                [":signedAt"] = new() { S = SaleItem.Timestamp(signature.SignedAt) },
+            }, ct);
+
+    public Task<bool> MarkFailedAsync(Sale sale, string reason, CancellationToken ct) =>
+        TransitionAsync(sale, SaleStatus.Failed, "FailureReason = :reason", new() { [":reason"] = new() { S = reason } }, ct);
+
+    private async Task<bool> TransitionAsync(
+        Sale sale, SaleStatus to, string setFields, Dictionary<string, AttributeValue> values, CancellationToken ct)
+    {
+        values[":to"] = new() { S = SaleItem.StatusName(to) };
+        values[":pending"] = new() { S = SaleItem.StatusName(SaleStatus.Pending) };
+        values[":version"] = new() { N = sale.Version.ToString(CultureInfo.InvariantCulture) };
+        values[":next"] = new() { N = (sale.Version + 1).ToString(CultureInfo.InvariantCulture) };
+        try
+        {
+            await dynamo.UpdateItemAsync(new UpdateItemRequest
+            {
+                TableName = tableName,
+                Key = new Dictionary<string, AttributeValue> { ["SaleId"] = new() { S = sale.SaleId } },
+                UpdateExpression = $"SET #status = :to, Version = :next, {setFields}",
+                ConditionExpression = "#status = :pending AND Version = :version",
+                ExpressionAttributeNames = new Dictionary<string, string> { ["#status"] = "Status" },
+                ExpressionAttributeValues = values,
+            }, ct);
+            return true;
+        }
+        catch (ConditionalCheckFailedException)
+        {
+            return false;
+        }
+    }
 }
 
 /// <summary>Maps a sale to its DynamoDB item. VenueDay and CreatedAt are the ByVenueDay index keys.</summary>
@@ -63,8 +108,8 @@ internal static class SaleItem
             ["Currency"] = S(sale.Currency),
             ["BusinessDate"] = S(businessDate),
             ["VenueDay"] = S($"{sale.VenueId}#{businessDate}"),
-            ["CreatedAt"] = S(sale.CreatedAt.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)),
-            ["Status"] = S(sale.Status.ToString().ToUpperInvariant()),
+            ["CreatedAt"] = S(Timestamp(sale.CreatedAt)),
+            ["Status"] = S(StatusName(sale.Status)),
             ["Version"] = N(sale.Version),
             ["IdempotencyKey"] = S(sale.IdempotencyKey),
             ["RequestHash"] = S(sale.RequestHash),
@@ -78,8 +123,19 @@ internal static class SaleItem
         {
             item["CustomerEmail"] = S(sale.CustomerEmail);
         }
+        if (sale.Signature is { } signature)
+        {
+            item["SignatureDeviceId"] = S(signature.DeviceId);
+            item["SignatureCounter"] = N(signature.Counter);
+            item["SignatureValue"] = S(signature.Value);
+            item["SignedAt"] = S(Timestamp(signature.SignedAt));
+        }
         return item;
     }
+
+    public static string Timestamp(DateTimeOffset instant) => instant.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
+
+    public static string StatusName(SaleStatus status) => status.ToString().ToUpperInvariant();
 
     public static Sale ToSale(Dictionary<string, AttributeValue> item) => new(
         SaleId: item["SaleId"].S,
@@ -88,14 +144,24 @@ internal static class SaleItem
         Market: item["Market"].S,
         Currency: item["Currency"].S,
         BusinessDate: DateOnly.ParseExact(item["BusinessDate"].S, "yyyy-MM-dd", CultureInfo.InvariantCulture),
-        CreatedAt: DateTimeOffset.Parse(item["CreatedAt"].S, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+        CreatedAt: ParseTimestamp(item["CreatedAt"].S),
         Status: Enum.Parse<SaleStatus>(item["Status"].S, ignoreCase: true),
         Version: int.Parse(item["Version"].N, CultureInfo.InvariantCulture),
         IdempotencyKey: item["IdempotencyKey"].S,
         RequestHash: item["RequestHash"].S,
         Priced: new PricedSale(item["Lines"].L.Select(entry => ToLine(entry.M)).ToList()),
         Payment: new Payment(item["PaymentMethod"].S, long.Parse(item["PaymentCents"].N, CultureInfo.InvariantCulture)),
-        CustomerEmail: item.TryGetValue("CustomerEmail", out var email) ? email.S : null);
+        CustomerEmail: item.TryGetValue("CustomerEmail", out var email) ? email.S : null,
+        Signature: item.ContainsKey("SignatureValue")
+            ? new Signature(
+                item["SignatureDeviceId"].S,
+                long.Parse(item["SignatureCounter"].N, CultureInfo.InvariantCulture),
+                item["SignatureValue"].S,
+                ParseTimestamp(item["SignedAt"].S))
+            : null);
+
+    private static DateTimeOffset ParseTimestamp(string value) =>
+        DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
 
     private static AttributeValue LineItem(PricedLine line) => new()
     {

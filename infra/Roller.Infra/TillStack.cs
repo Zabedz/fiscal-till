@@ -10,8 +10,10 @@ using Amazon.CDK.AWS.Lambda;
 using Amazon.CDK.AWS.Lambda.EventSources;
 using Amazon.CDK.AWS.Logs;
 using Amazon.CDK.AWS.S3;
+using Amazon.CDK.AWS.SecretsManager;
 using Amazon.CDK.AWS.SNS;
 using Amazon.CDK.AWS.SQS;
+using Amazon.CDK.AWS.SSM;
 using Constructs;
 using Roller.Core;
 using DynamoAttribute = Amazon.CDK.AWS.DynamoDB.Attribute;
@@ -32,10 +34,19 @@ public sealed class TillStack : Stack
     // Lambda's SQS guidance: visibility timeout at least 6x the function timeout.
     private static readonly Duration FiscaliseVisibility = Duration.Seconds(WorkerTimeout.ToSeconds() * 6);
 
-    // Worker backoff (5 s doubling, 60 s cap) gives about 8 minutes of retries, enough for a 5-minute outage.
+    // Worker backoff (5 s doubling, 60 s cap, plus jitter) puts the last retry at least 6 minutes after the first delivery.
     private const int FiscaliseMaxReceives = 10;
 
     private const int JournalMaxReceives = 5;
+
+    // Room for the latency drill (switch latencyMs up to about 10 s).
+    private static readonly Duration PartnerTimeout = Duration.Seconds(15);
+
+    // The worker has at most 50 partner calls in flight; the cap keeps a flood on the public URL off the account pool.
+    private const int PartnerConcurrency = 60;
+
+    private const string PartnerSwitchesParameter = "/roller/partner/switches";
+    private const int SecretLength = 40;
 
     // 5 invocations of up to 10 messages each: at most 50 partner calls in flight when a backlog drains.
     private const int MaxWorkerInvocations = 5;
@@ -74,7 +85,7 @@ public sealed class TillStack : Stack
             DeadLetterQueue = new DeadLetterQueue { Queue = fiscaliseDlq, MaxReceiveCount = FiscaliseMaxReceives },
         });
 
-        // FIFO with one message group per till: receipt numbers follow signing order within a till.
+        // FIFO with one message group per till: the journal takes one till's sales one at a time.
         var journalDlq = new Queue(this, "JournalDlq", new QueueProps
         {
             Fifo = true,
@@ -171,18 +182,46 @@ public sealed class TillStack : Stack
         });
         sales.Grant(getSale, "dynamodb:GetItem");
 
+        var partnerTable = new Table(this, "PartnerSignatures", new TableProps
+        {
+            PartitionKey = new DynamoAttribute { Name = "Pk", Type = AttributeType.STRING },
+            BillingMode = BillingMode.PAY_PER_REQUEST,
+            RemovalPolicy = RemovalPolicy.DESTROY,
+        });
+        var partnerApiKey = NewSecret("PartnerApiKey");
+        var partnerSigningKey = NewSecret("PartnerSigningKey");
+        var partnerSwitches = new StringParameter(this, "PartnerSwitches", new StringParameterProps
+        {
+            ParameterName = PartnerSwitchesParameter,
+            StringValue = """{"latencyMs":0,"errorRate":0,"outage":false}""",
+        });
+
+        var partner = NewFunction("MockPartner", "Roller.MockPartner", "Roller.MockPartner.PartnerFunction::Handle", PartnerTimeout, new()
+        {
+            ["PARTNER_TABLE"] = partnerTable.TableName,
+            ["API_KEY_SECRET_ARN"] = partnerApiKey.SecretArn,
+            ["SIGNING_KEY_SECRET_ARN"] = partnerSigningKey.SecretArn,
+            ["SWITCHES_PARAMETER"] = partnerSwitches.ParameterName,
+        }, PartnerConcurrency);
+        partnerTable.Grant(partner, "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:ConditionCheckItem");
+        partnerApiKey.GrantRead(partner);
+        partnerSigningKey.GrantRead(partner);
+        partnerSwitches.GrantRead(partner);
+        var partnerUrl = partner.AddFunctionUrl(new FunctionUrlOptions { AuthType = FunctionUrlAuthType.NONE });
+
         var worker = NewFunction("FiscaliseWorker", "Roller.Fiscalise", "Roller.Fiscalise.FiscaliseFunction::Handle", WorkerTimeout, new()
         {
             ["SALES_TABLE"] = sales.TableName,
             ["FISCALISE_QUEUE_URL"] = fiscaliseQueue.QueueUrl,
             ["JOURNAL_QUEUE_URL"] = journalQueue.QueueUrl,
+            ["PARTNER_URL"] = partnerUrl.Url,
+            ["PARTNER_KEY_SECRET_ARN"] = partnerApiKey.SecretArn,
         });
         sales.Grant(worker, "dynamodb:GetItem", "dynamodb:UpdateItem");
         journalQueue.GrantSendMessages(worker);
+        partnerApiKey.GrantRead(worker);
         worker.AddEventSource(new SqsEventSource(fiscaliseQueue, new SqsEventSourceProps
         {
-            // Off until the worker signs; accepted sales wait in the queue.
-            Enabled = false,
             BatchSize = 10,
             ReportBatchItemFailures = true,
             MaxConcurrency = MaxWorkerInvocations,
@@ -208,11 +247,20 @@ public sealed class TillStack : Stack
         new CfnOutput(this, "JournalQueueUrl", new CfnOutputProps { Value = journalQueue.QueueUrl });
         new CfnOutput(this, "JournalDlqUrl", new CfnOutputProps { Value = journalDlq.QueueUrl });
         new CfnOutput(this, "ReceiptsBucketName", new CfnOutputProps { Value = receipts.BucketName });
+        new CfnOutput(this, "PartnerUrl", new CfnOutputProps { Value = partnerUrl.Url });
     }
 
-    private Function NewFunction(string id, string project, string handler, Duration timeout, Dictionary<string, string> environment) =>
+    private Secret NewSecret(string id) => new(this, id, new SecretProps
+    {
+        GenerateSecretString = new SecretStringGenerator { ExcludePunctuation = true, PasswordLength = SecretLength },
+        RemovalPolicy = RemovalPolicy.DESTROY,
+    });
+
+    private Function NewFunction(
+        string id, string project, string handler, Duration timeout, Dictionary<string, string> environment, int? reservedConcurrency = null) =>
         new(this, id, new FunctionProps
         {
+            ReservedConcurrentExecutions = reservedConcurrency,
             Runtime = Runtime.DOTNET_10,
             Architecture = Architecture.ARM_64,
             MemorySize = 1024,

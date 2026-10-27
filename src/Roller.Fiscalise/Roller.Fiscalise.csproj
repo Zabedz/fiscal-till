@@ -4,8 +4,16 @@
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Roller.Fiscalise.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" />
     <PackageReference Include="Amazon.Lambda.SQSEvents" />
+    <PackageReference Include="AWSSDK.SecretsManager" />
+    <PackageReference Include="AWSSDK.SQS" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Roller.Core\Roller.Core.csproj" />
   </ItemGroup>
 </Project>

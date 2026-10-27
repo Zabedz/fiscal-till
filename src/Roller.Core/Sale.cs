@@ -35,6 +35,9 @@ public sealed record PricedSale(IReadOnlyList<PricedLine> Lines)
 
 public enum SaleStatus { Pending, Signed, Failed }
 
+/// <summary>The fiscal partner's signature. Counter is the signing device's transaction counter.</summary>
+public sealed record Signature(string DeviceId, long Counter, string Value, DateTimeOffset SignedAt);
+
 /// <summary>A sale as stored. BusinessDate is the venue's trading day; CreatedAt is UTC.</summary>
 public sealed record Sale(
     string SaleId,
@@ -50,7 +53,8 @@ public sealed record Sale(
     string RequestHash,
     PricedSale Priced,
     Payment Payment,
-    string? CustomerEmail);
+    string? CustomerEmail,
+    Signature? Signature = null);
 
-/// <summary>Body of a fiscalise-queue message; the worker reads the sale itself from DynamoDB.</summary>
-public sealed record FiscaliseMessage(string SaleId, string VenueId, string TillId);
+/// <summary>Body of fiscalise and journal queue messages; consumers read the sale itself from DynamoDB.</summary>
+public sealed record SaleMessage(string SaleId, string VenueId, string TillId);

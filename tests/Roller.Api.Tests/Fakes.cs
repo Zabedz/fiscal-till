@@ -19,7 +19,27 @@ internal sealed class InMemorySaleStore : ISaleStore
     public Task<Sale?> GetAsync(string saleId, CancellationToken ct) =>
         Task.FromResult(_sales.GetValueOrDefault(saleId));
 
+    public Task<bool> MarkSignedAsync(Sale sale, Signature signature, CancellationToken ct) =>
+        Task.FromResult(Transition(sale, current => current with { Status = SaleStatus.Signed, Version = current.Version + 1, Signature = signature }));
+
+    public Task<bool> MarkFailedAsync(Sale sale, string reason, CancellationToken ct) =>
+        Task.FromResult(Transition(sale, current => current with { Status = SaleStatus.Failed, Version = current.Version + 1 }));
+
     public void Replace(Sale sale) => _sales[sale.SaleId] = sale;
+
+    // Same condition as the DynamoDB update: still PENDING and at the version the caller read.
+    private bool Transition(Sale read, Func<Sale, Sale> change)
+    {
+        lock (_sales)
+        {
+            if (!_sales.TryGetValue(read.SaleId, out var current) || current.Status != SaleStatus.Pending || current.Version != read.Version)
+            {
+                return false;
+            }
+            _sales[read.SaleId] = change(current);
+            return true;
+        }
+    }
 }
 
 internal sealed class RecordingQueue : IFiscaliseQueue
