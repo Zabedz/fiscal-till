@@ -38,6 +38,9 @@ public enum SaleStatus { Pending, Signed, Failed }
 /// <summary>The fiscal partner's signature. Counter is the signing device's transaction counter.</summary>
 public sealed record Signature(string DeviceId, long Counter, string Value, DateTimeOffset SignedAt);
 
+/// <summary>The journal's record of a signed sale: gapless number per till and the S3 key of the receipt document.</summary>
+public sealed record Receipt(int Number, string Key, DateTimeOffset JournaledAt);
+
 /// <summary>A sale as stored. BusinessDate is the venue's trading day; CreatedAt is UTC.</summary>
 public sealed record Sale(
     string SaleId,
@@ -54,7 +57,9 @@ public sealed record Sale(
     PricedSale Priced,
     Payment Payment,
     string? CustomerEmail,
-    Signature? Signature = null);
+    Signature? Signature = null,
+    Receipt? Receipt = null,
+    DateTimeOffset? EmailedAt = null);
 
 /// <summary>Body of fiscalise and journal queue messages; consumers read the sale itself from DynamoDB.</summary>
 public sealed record SaleMessage(string SaleId, string VenueId, string TillId);

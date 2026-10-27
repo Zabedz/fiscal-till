@@ -17,7 +17,7 @@ public class MarketRulesRegistryTests
     public void ConfigEntryWithoutARulesClassFailsToLoad()
     {
         var configs = MarketConfig.Load()
-            .Append(new MarketConfig("CH", "CHF", new Dictionary<string, IReadOnlyList<RatePeriod>>()))
+            .Append(new MarketConfig("CH", "CHF", "de-CH", new Dictionary<string, IReadOnlyList<RatePeriod>>()))
             .ToList();
 
         var error = Assert.Throws<InvalidOperationException>(() => MarketRulesRegistry.From(configs));

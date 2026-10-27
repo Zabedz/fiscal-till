@@ -7,6 +7,7 @@ public abstract class MarketRules(MarketConfig config) : IMarketRules
 {
     public string Market => config.Market;
     public string Currency => config.Currency;
+    public string Locale => config.Locale;
 
     /// <summary>Rates the fiscal payload has a field for; null when it lists rates as they come.</summary>
     public virtual IReadOnlySet<decimal>? FiscalRates => null;

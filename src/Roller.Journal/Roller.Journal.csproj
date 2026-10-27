@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+  <ItemGroup>
+    <InternalsVisibleTo Include="Roller.Journal.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Roller.Core\Roller.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" />
+    <PackageReference Include="AWSSDK.SimpleEmailV2" />
+    <PackageReference Include="AWSSDK.SQS" />
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <!-- Overrides the 9.0.18 that Microsoft.Data.SqlClient 7.1.1 brings in (GHSA-846f-f764-76mx). -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
+  </ItemGroup>
+</Project>

@@ -6,11 +6,13 @@
     <Project Path="src/Roller.Api/Roller.Api.csproj" />
     <Project Path="src/Roller.Core/Roller.Core.csproj" />
     <Project Path="src/Roller.Fiscalise/Roller.Fiscalise.csproj" />
+    <Project Path="src/Roller.Journal/Roller.Journal.csproj" />
     <Project Path="src/Roller.MockPartner/Roller.MockPartner.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Roller.Api.Tests/Roller.Api.Tests.csproj" />
     <Project Path="tests/Roller.Core.Tests/Roller.Core.Tests.csproj" />
     <Project Path="tests/Roller.Fiscalise.Tests/Roller.Fiscalise.Tests.csproj" />
+    <Project Path="tests/Roller.Journal.Tests/Roller.Journal.Tests.csproj" />
   </Folder>
 </Solution>

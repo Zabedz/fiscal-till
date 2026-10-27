@@ -16,7 +16,8 @@ internal sealed record SaleView(
     long NetCents,
     IReadOnlyList<VatTotal> VatByRate,
     IReadOnlyList<PricedLine> Lines,
-    Signature? Signature)
+    Signature? Signature,
+    Receipt? Receipt)
 {
     public static SaleView From(Sale sale) => new(
         sale.SaleId,
@@ -31,5 +32,6 @@ internal sealed record SaleView(
         sale.Priced.NetCents,
         sale.Priced.VatByRate,
         sale.Priced.Lines,
-        sale.Signature);
+        sale.Signature,
+        sale.Receipt);
 }

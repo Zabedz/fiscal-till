@@ -16,6 +16,12 @@ public interface ISaleStore
 
     /// <summary>PENDING to FAILED, for a sale the partner rejected; false when the sale had already moved on.</summary>
     Task<bool> MarkFailedAsync(Sale sale, string reason, CancellationToken ct);
+
+    /// <summary>Records the journal receipt on a SIGNED sale; false when it already holds a different receipt number.</summary>
+    Task<bool> MarkJournaledAsync(string saleId, Receipt receipt, CancellationToken ct);
+
+    /// <summary>Sets EmailedAt after the receipt email went out; false when it was already set.</summary>
+    Task<bool> MarkEmailedAsync(string saleId, DateTimeOffset emailedAt, CancellationToken ct);
 }
 
 public sealed class DynamoSaleStore(IAmazonDynamoDB dynamo, string tableName) : ISaleStore
@@ -65,6 +71,44 @@ public sealed class DynamoSaleStore(IAmazonDynamoDB dynamo, string tableName) : 
 
     public Task<bool> MarkFailedAsync(Sale sale, string reason, CancellationToken ct) =>
         TransitionAsync(sale, SaleStatus.Failed, "FailureReason = :reason", new() { [":reason"] = new() { S = reason } }, ct);
+
+    public Task<bool> MarkJournaledAsync(string saleId, Receipt receipt, CancellationToken ct) =>
+        ConditionalUpdateAsync(saleId,
+            "SET ReceiptNumber = :number, ReceiptKey = :key, JournaledAt = :at",
+            "#status = :signed AND (attribute_not_exists(ReceiptNumber) OR ReceiptNumber = :number)",
+            new()
+            {
+                [":number"] = new() { N = receipt.Number.ToString(CultureInfo.InvariantCulture) },
+                [":key"] = new() { S = receipt.Key },
+                [":at"] = new() { S = SaleItem.Timestamp(receipt.JournaledAt) },
+                [":signed"] = new() { S = SaleItem.StatusName(SaleStatus.Signed) },
+            }, ct);
+
+    public Task<bool> MarkEmailedAsync(string saleId, DateTimeOffset emailedAt, CancellationToken ct) =>
+        ConditionalUpdateAsync(saleId, "SET EmailedAt = :at", "attribute_not_exists(EmailedAt)",
+            new() { [":at"] = new() { S = SaleItem.Timestamp(emailedAt) } }, ct);
+
+    private async Task<bool> ConditionalUpdateAsync(
+        string saleId, string update, string condition, Dictionary<string, AttributeValue> values, CancellationToken ct)
+    {
+        try
+        {
+            await dynamo.UpdateItemAsync(new UpdateItemRequest
+            {
+                TableName = tableName,
+                Key = new Dictionary<string, AttributeValue> { ["SaleId"] = new() { S = saleId } },
+                UpdateExpression = update,
+                ConditionExpression = condition,
+                ExpressionAttributeNames = condition.Contains("#status") ? new Dictionary<string, string> { ["#status"] = "Status" } : null,
+                ExpressionAttributeValues = values,
+            }, ct);
+            return true;
+        }
+        catch (ConditionalCheckFailedException)
+        {
+            return false;
+        }
+    }
 
     private async Task<bool> TransitionAsync(
         Sale sale, SaleStatus to, string setFields, Dictionary<string, AttributeValue> values, CancellationToken ct)
@@ -130,6 +174,16 @@ internal static class SaleItem
             item["SignatureValue"] = S(signature.Value);
             item["SignedAt"] = S(Timestamp(signature.SignedAt));
         }
+        if (sale.Receipt is { } receipt)
+        {
+            item["ReceiptNumber"] = N(receipt.Number);
+            item["ReceiptKey"] = S(receipt.Key);
+            item["JournaledAt"] = S(Timestamp(receipt.JournaledAt));
+        }
+        if (sale.EmailedAt is { } emailedAt)
+        {
+            item["EmailedAt"] = S(Timestamp(emailedAt));
+        }
         return item;
     }
 
@@ -158,7 +212,14 @@ internal static class SaleItem
                 long.Parse(item["SignatureCounter"].N, CultureInfo.InvariantCulture),
                 item["SignatureValue"].S,
                 ParseTimestamp(item["SignedAt"].S))
-            : null);
+            : null,
+        Receipt: item.ContainsKey("ReceiptNumber")
+            ? new Receipt(
+                int.Parse(item["ReceiptNumber"].N, CultureInfo.InvariantCulture),
+                item["ReceiptKey"].S,
+                ParseTimestamp(item["JournaledAt"].S))
+            : null,
+        EmailedAt: item.TryGetValue("EmailedAt", out var emailed) ? ParseTimestamp(emailed.S) : null);
 
     private static DateTimeOffset ParseTimestamp(string value) =>
         DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);

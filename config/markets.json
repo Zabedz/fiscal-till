@@ -2,6 +2,7 @@
   {
     "market": "FR",
     "currency": "EUR",
+    "locale": "fr-FR",
     "categories": {
       "admission": [{ "from": "2024-01-01", "rate": 10 }],
       "food-onsite": [{ "from": "2024-01-01", "rate": 10 }],
@@ -15,6 +16,7 @@
   {
     "market": "DE",
     "currency": "EUR",
+    "locale": "de-DE",
     "categories": {
       "admission": [{ "from": "2024-01-01", "rate": 19 }],
       "food-onsite": [{ "from": "2024-01-01", "rate": 19 }, { "from": "2026-01-01", "rate": 7 }],
@@ -28,6 +30,7 @@
   {
     "market": "AT",
     "currency": "EUR",
+    "locale": "de-AT",
     "categories": {
       "admission": [{ "from": "2024-01-01", "rate": 13 }],
       "food-onsite": [{ "from": "2024-01-01", "rate": 10 }],

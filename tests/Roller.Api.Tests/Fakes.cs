@@ -27,6 +27,12 @@ internal sealed class InMemorySaleStore : ISaleStore
 
     public void Replace(Sale sale) => _sales[sale.SaleId] = sale;
 
+    public Task<bool> MarkJournaledAsync(string saleId, Receipt receipt, CancellationToken ct) =>
+        throw new NotSupportedException("The journal is not part of these tests");
+
+    public Task<bool> MarkEmailedAsync(string saleId, DateTimeOffset emailedAt, CancellationToken ct) =>
+        throw new NotSupportedException("The journal is not part of these tests");
+
     // Same condition as the DynamoDB update: still PENDING and at the version the caller read.
     private bool Transition(Sale read, Func<Sale, Sale> change)
     {

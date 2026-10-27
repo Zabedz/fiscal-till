@@ -8,6 +8,10 @@ public interface IMarketRules
 {
     string Market { get; }
     string Currency { get; }
+
+    /// <summary>Culture name (fr-FR) for amounts and dates shown to customers.</summary>
+    string Locale { get; }
+
     bool TryGetRate(string category, DateOnly supplyDate, out decimal rate);
     PricedSale Price(IReadOnlyList<SaleLineRequest> lines, DateOnly supplyDate);
 

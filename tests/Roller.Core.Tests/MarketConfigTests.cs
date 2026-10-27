@@ -42,7 +42,7 @@ public class MarketConfigTests
     [Fact]
     public void TwoRatesFromTheSameDateAreAProblem()
     {
-        var config = new MarketConfig("AT", "EUR", new Dictionary<string, IReadOnlyList<RatePeriod>>
+        var config = new MarketConfig("AT", "EUR", "de-AT", new Dictionary<string, IReadOnlyList<RatePeriod>>
         {
             ["staple-goods"] = [new(new DateOnly(2026, 7, 1), 4.9m), new(new DateOnly(2026, 7, 1), 5.9m)],
         });

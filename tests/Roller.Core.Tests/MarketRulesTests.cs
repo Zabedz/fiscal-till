@@ -66,7 +66,7 @@ public class MarketRulesTests
     [Fact]
     public void GermanPayloadRefusesARateWithoutAKey()
     {
-        var sixteen = new MarketConfig("DE", "EUR", new Dictionary<string, IReadOnlyList<RatePeriod>>
+        var sixteen = new MarketConfig("DE", "EUR", "de-DE", new Dictionary<string, IReadOnlyList<RatePeriod>>
         {
             ["admission"] = [new(new DateOnly(2024, 1, 1), 16m)],
         });

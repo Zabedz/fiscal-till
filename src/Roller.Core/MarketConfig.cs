@@ -1,10 +1,13 @@
+using System.Globalization;
+
 namespace Roller.Core;
 
 /// <summary>A VAT rate in percent, applying to supplies from a local calendar date until the next period starts.</summary>
 public sealed record RatePeriod(DateOnly From, decimal Rate);
 
 /// <summary>One market from config/markets.json: currency and dated VAT rates per sale category.</summary>
-public sealed record MarketConfig(string Market, string Currency, IReadOnlyDictionary<string, IReadOnlyList<RatePeriod>> Categories)
+public sealed record MarketConfig(
+    string Market, string Currency, string Locale, IReadOnlyDictionary<string, IReadOnlyList<RatePeriod>> Categories)
 {
     private const decimal MaxRate = 100m;
 
@@ -30,6 +33,10 @@ public sealed record MarketConfig(string Market, string Currency, IReadOnlyDicti
         {
             problems.Add($"{Market}: currency {Currency} is not a three-letter code");
         }
+        if (!IsKnownCulture(Locale))
+        {
+            problems.Add($"{Market}: locale {Locale} is not a known culture");
+        }
 
         foreach (var (category, periods) in Categories)
         {
@@ -48,4 +55,7 @@ public sealed record MarketConfig(string Market, string Currency, IReadOnlyDicti
         }
         return problems;
     }
+
+    private static bool IsKnownCulture(string name) =>
+        CultureInfo.GetCultures(CultureTypes.SpecificCultures).Any(culture => culture.Name == name);
 }
