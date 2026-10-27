@@ -1,0 +1,14 @@
+bin/
+obj/
+cdk.out/
+*.user
+.idea/
+.vs/
+.vscode/
+node_modules/
+web/till/.angular/
+web/till/dist/
+load/results/
+.env
+artifacts/
+cdk.context.json

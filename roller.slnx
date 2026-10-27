@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/infra/">
+    <Project Path="infra/Roller.Infra/Roller.Infra.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Roller.Api/Roller.Api.csproj" />
+    <Project Path="src/Roller.Core/Roller.Core.csproj" />
+    <Project Path="src/Roller.Fiscalise/Roller.Fiscalise.csproj" />
+  </Folder>
+</Solution>

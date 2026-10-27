@@ -1,0 +1,5 @@
+[
+  { "venueId": "paris-01", "name": "Paris", "market": "FR", "timeZone": "Europe/Paris", "tillCount": 20 },
+  { "venueId": "berlin-01", "name": "Berlin", "market": "DE", "timeZone": "Europe/Berlin", "tillCount": 20 },
+  { "venueId": "vienna-01", "name": "Vienna", "market": "AT", "timeZone": "Europe/Vienna", "tillCount": 20 }
+]
