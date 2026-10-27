@@ -1,0 +1,244 @@
+@if (config.problem(); as problem) {
+  <main class="setup">
+    <h1>Till</h1>
+    <p>{{ problem }}</p>
+  </main>
+} @else if (venue(); as venue) {
+  <div class="till">
+    <header class="bar">
+      <label class="pick">
+        <span>Venue</span>
+        <select (change)="chooseVenue($any($event.target).value)">
+          @for (option of venues(); track option.venueId) {
+            <option [value]="option.venueId" [selected]="option.venueId === venue.venueId">{{ option.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="pick">
+        <span>Till</span>
+        <select (change)="tillId.set($any($event.target).value)">
+          @for (till of tills(); track till) {
+            <option [value]="till" [selected]="till === tillId()">{{ till }}</option>
+          }
+        </select>
+      </label>
+      <p class="market">{{ marketNames[venue.market] }}, prices in {{ venue.currency }} including VAT</p>
+    </header>
+
+    <main class="keys">
+      @for (group of groups(); track group.title) {
+        <section class="group">
+          <h2 [attr.lang]="venue.locale">{{ group.title }}</h2>
+          <div class="keycaps">
+            @for (item of group.items; track item.sku) {
+              <button type="button" class="keycap" (click)="add(item)">
+                <span class="keycap-name" [attr.lang]="venue.locale">{{ item.name }}</span>
+                <span class="keycap-price">{{ item.unitPriceCents / 100 | currency: venue.currency : 'symbol' : '1.2-2' : venue.locale }}</span>
+              </button>
+            }
+          </div>
+        </section>
+      }
+    </main>
+
+    <section class="checkout" aria-label="Payment">
+      <label class="email">
+        <span>Email the receipt (optional)</span>
+        <input
+          type="email"
+          autocomplete="off"
+          placeholder="customer@example.com"
+          aria-describedby="email-problem"
+          [attr.aria-invalid]="!emailValid()"
+          [value]="email()"
+          (input)="setEmail($any($event.target))"
+        />
+        <span id="email-problem" class="field-problem">
+          @if (!emailValid()) {
+            Enter a full address such as name&#64;example.com, or leave it empty.
+          }
+        </span>
+      </label>
+      <div class="pay-keys">
+        <button type="button" class="pay" [disabled]="!canPay()" (click)="pay('card')">
+          Pay by card {{ total() / 100 | currency: venue.currency : 'symbol' : '1.2-2' : venue.locale }}
+        </button>
+        <button type="button" class="pay cash" [disabled]="!canPay()" (click)="pay('cash')">Pay cash</button>
+        @if (selected()) {
+          <button type="button" class="clear" (click)="closeSale()">{{ basket().length > 0 ? 'Back to basket' : 'New sale' }}</button>
+        } @else {
+          <button type="button" class="clear" [disabled]="basket().length === 0 && !email()" (click)="clear()">Clear</button>
+        }
+      </div>
+    </section>
+
+    <aside class="printer" aria-label="Receipt">
+      @if (selected(); as sale) {
+        <article class="paper" [class.is-void]="tone(sale) === 'failed'">
+          <header class="paper-head">
+            <p class="paper-venue">{{ sale.venue.name }}</p>
+            <p>Till {{ sale.request.tillId }}</p>
+            <p>
+              {{ sale.view?.createdAt ?? sale.paidAt | date: 'short' : offset(sale.venue, sale.view?.createdAt ?? sale.paidAt) : sale.venue.locale }}
+            </p>
+          </header>
+
+          <ul class="paper-lines">
+            @for (line of paperLines(sale); track $index) {
+              <li class="paper-line">
+                <span [attr.lang]="sale.venue.locale">{{ line.quantity }} × {{ line.description }}</span>
+                <span>{{ line.grossCents / 100 | currency: sale.venue.currency : 'symbol' : '1.2-2' : sale.venue.locale }}</span>
+              </li>
+            }
+          </ul>
+
+          @if (sale.view; as view) {
+            <table class="paper-vat">
+              <thead>
+                <tr>
+                  <th scope="col">Rate</th>
+                  <th scope="col">Net</th>
+                  <th scope="col">VAT</th>
+                  <th scope="col">Gross</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (rate of view.vatByRate; track rate.rate) {
+                  <tr>
+                    <td>{{ rate.rate | number: '1.0-2' : sale.venue.locale }} %</td>
+                    <td>{{ rate.netCents / 100 | number: '1.2-2' : sale.venue.locale }}</td>
+                    <td>{{ rate.vatCents / 100 | number: '1.2-2' : sale.venue.locale }}</td>
+                    <td>{{ rate.grossCents / 100 | number: '1.2-2' : sale.venue.locale }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+
+          <p class="paper-total">
+            <span>Total</span>
+            <span>{{ sale.request.payment.amountCents / 100 | currency: sale.venue.currency : 'symbol' : '1.2-2' : sale.venue.locale }}</span>
+          </p>
+          <p>Paid {{ sale.request.payment.method === 'card' ? 'by card' : 'in cash' }}</p>
+
+          @if (tone(sale) === 'failed') {
+            <p class="paper-void">Not a fiscal receipt: {{ summary(sale).toLowerCase() }}.</p>
+          }
+
+          @if (sale.view?.signature; as signature) {
+            <section class="paper-signature" aria-label="Fiscal signature">
+              <p>Signed by device {{ signature.deviceId }}, transaction {{ signature.counter }}</p>
+              <p>{{ signature.signedAt | date: 'mediumTime' : offset(sale.venue, signature.signedAt) : sale.venue.locale }}</p>
+              <p class="paper-code">{{ signature.value }}</p>
+            </section>
+          }
+
+          @if (sale.view?.receipt; as receipt) {
+            <p class="paper-number">Receipt {{ receiptNumber(receipt.number) }}</p>
+          }
+        </article>
+
+        <ol class="trail">
+          <li [attr.data-step]="accepted(sale)">
+            <span class="trail-title">Accepted by the till service</span>
+            @switch (accepted(sale)) {
+              @case ('done') {
+                <span class="trail-detail">Stored as sale {{ sale.view!.saleId.slice(0, 8) }}</span>
+              }
+              @default {
+                <span class="trail-detail">{{ sale.note ?? 'Sending' }}</span>
+              }
+            }
+          </li>
+          <li [attr.data-step]="signed(sale)">
+            <span class="trail-title">Signed by the fiscal partner</span>
+            @switch (signed(sale)) {
+              @case ('done') {
+                <span class="trail-detail">Transaction {{ sale.view!.signature!.counter }} on {{ sale.view!.signature!.deviceId }}</span>
+              }
+              @case ('current') {
+                <span class="trail-detail">Waiting for the signing service. The sale is stored and is signed as soon as it answers.</span>
+              }
+              @case ('failed') {
+                <span class="trail-detail">The signing service refused this sale.</span>
+              }
+            }
+          </li>
+          <li [attr.data-step]="numbered(sale)">
+            <span class="trail-title">Numbered in the fiscal journal</span>
+            @switch (numbered(sale)) {
+              @case ('done') {
+                <span class="trail-detail">Receipt {{ receiptNumber(sale.view!.receipt!.number) }} for till {{ sale.request.tillId }}</span>
+              }
+              @case ('current') {
+                <span class="trail-detail">Waiting for the journal.</span>
+              }
+            }
+          </li>
+        </ol>
+        @if (sale.view && sale.note) {
+          <p class="trail-note">{{ sale.note }}</p>
+        }
+      } @else {
+        <article class="paper">
+          <header class="paper-head">
+            <p class="paper-venue">{{ venue.name }}</p>
+            <p>Till {{ tillId() }}</p>
+            <p>{{ now() | date: 'short' : offset(venue, now()) : venue.locale }}</p>
+          </header>
+
+          @if (basket().length === 0) {
+            <p class="paper-empty">Choose items to start a sale.</p>
+          } @else {
+            <ul class="paper-lines">
+              @for (line of basket(); track line.item.sku) {
+                <li class="paper-line">
+                  <span [attr.lang]="venue.locale">{{ line.quantity }} × {{ line.item.name }}</span>
+                  <span>{{ (line.item.unitPriceCents * line.quantity) / 100 | currency: venue.currency : 'symbol' : '1.2-2' : venue.locale }}</span>
+                  <button type="button" class="less" (click)="removeOne(line.item.sku)" [attr.aria-label]="'Remove one ' + line.item.name">-</button>
+                </li>
+              }
+            </ul>
+            <p class="paper-total">
+              <span>Total</span>
+              <span>{{ total() / 100 | currency: venue.currency : 'symbol' : '1.2-2' : venue.locale }}</span>
+            </p>
+            <p class="paper-unpaid">Not paid</p>
+          }
+        </article>
+      }
+    </aside>
+
+    <section class="earlier" aria-label="Earlier sales" aria-live="polite">
+      <h2>Earlier sales</h2>
+      @if (salesForUnknownVenues() > 0) {
+        <p class="earlier-note">
+          {{ salesForUnknownVenues() }} unsent {{ salesForUnknownVenues() === 1 ? 'sale belongs' : 'sales belong' }} to a venue missing from
+          config.json. They are kept and sent once the venue is back.
+        </p>
+      }
+      @if (sales().length === 0) {
+        <p class="earlier-note">Paid sales appear here with their signing status.</p>
+      } @else {
+        <ol>
+          @for (sale of sales(); track sale.key) {
+            <li aria-atomic="true">
+              <button
+                type="button"
+                class="earlier-sale"
+                [class.is-shown]="sale.key === selected()?.key"
+                [attr.aria-current]="sale.key === selected()?.key ? 'true' : null"
+                (click)="show(sale.key)"
+              >
+                <span class="earlier-time">{{ sale.paidAt | date: 'shortTime' : offset(sale.venue, sale.paidAt) : sale.venue.locale }}</span>
+                <span>{{ sale.venue.name }} {{ sale.request.tillId }}</span>
+                <span class="earlier-amount">{{ sale.request.payment.amountCents / 100 | currency: sale.venue.currency : 'symbol' : '1.2-2' : sale.venue.locale }}</span>
+                <span class="chip" [attr.data-tone]="tone(sale)">{{ summary(sale) }}</span>
+              </button>
+            </li>
+          }
+        </ol>
+      }
+    </section>
+  </div>
+}

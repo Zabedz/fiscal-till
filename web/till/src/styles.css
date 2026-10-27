@@ -1,0 +1,62 @@
+:root {
+  /* Counter and keys, after POS terminal plastics. */
+  --counter: #e6ebe8;
+  --ink: #12343b;
+  --ink-soft: #4f6a6e;
+  --key: #f7f9f8;
+  --key-edge: #b9c6c0;
+  --key-depth: #94a69e;
+  --field-edge: #74867f;
+
+  /* Receipt paper and thermal print. */
+  --paper: #ffffff;
+  --thermal: #3a3640;
+  --thermal-faint: #6e6878;
+
+  /* Status inks, used only for status. */
+  --waiting: #8f5c0e;
+  --signed: #256b42;
+  --numbered: #2f5da8;
+  --failed: #b3261e;
+
+  --focus: #2f5da8;
+  --till-font: 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+  --paper-font: 'Martian Mono Variable', ui-monospace, monospace;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--counter);
+  color: var(--ink);
+  font-family: var(--till-font);
+  font-size: 100%;
+  line-height: 1.4;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

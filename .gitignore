@@ -12,3 +12,4 @@ load/results/
 .env
 artifacts/
 cdk.context.json
+web/till/public/config.json
