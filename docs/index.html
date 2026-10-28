@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiscal till pipeline</title>
+<meta name="description" content="A fiscal receipt pipeline for venue tills in France, Germany and Austria, with its load and failure drills on AWS.">
+<style>
+/* One reading column for prose; figures and the graph grid widen to the page. System fonts only, so the page loads nothing from third parties. */
+:root {
+  --bg: #f5f7f9; --fg: #16202b; --muted: #566271; --rule: #d8dee5; --accent: #2f5da8;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #10141a; --fg: #e3e8ee; --muted: #9ba7b6; --rule: #2a323d; --accent: #7ea6f2; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 400 16px/1.6 var(--sans);
+  padding: 48px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px));
+}
+main { max-width: 1120px; margin: 0 auto; display: grid; gap: 64px; }
+section, header { display: grid; gap: 20px; }
+.prose { max-width: 68ch; display: grid; gap: 14px; }
+h1, h2, h3 { margin: 0; font-weight: 600; line-height: 1.2; text-wrap: balance; }
+h1 { font-size: 2.4rem; letter-spacing: -0.01em; }
+h2 { font-size: 1.45rem; }
+h3 { font-size: 0.85rem; color: var(--muted); letter-spacing: 0.02em; }
+p, ol, ul { margin: 0; }
+ol, ul { padding-left: 1.3em; display: grid; gap: 6px; }
+a { color: var(--accent); }
+a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code { font: 400 0.9em var(--mono); }
+.lede { font-size: 1.15rem; }
+.muted { color: var(--muted); }
+.links { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+figure { margin: 0; display: grid; gap: 10px; }
+figcaption { color: var(--muted); font-size: 0.92rem; max-width: 80ch; }
+.diagram { overflow-x: auto; }
+.diagram img { display: block; width: 100%; min-width: 860px; height: auto; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; vertical-align: top; padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); }
+th { font-weight: 600; color: var(--muted); font-size: 0.85rem; }
+td:first-child { font-weight: 600; }
+.group { display: grid; gap: 14px; }
+.graphs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 24px; }
+.graphs figure { min-width: 0; }
+.graphs figure:first-child { grid-column: 1 / -1; }
+.graphs figure:first-child img { max-width: 1100px; }
+.graphs img { display: block; width: 100%; height: auto; background: #ffffff; border: 1px solid var(--rule); border-radius: 6px; }
+@media (max-width: 760px) { .graphs { grid-template-columns: minmax(0, 1fr); } }
+footer { max-width: 1120px; margin: 64px auto 0; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--rule); padding-top: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <header class="prose">
+    <h1>Fiscal till pipeline</h1>
+    <p class="lede">Fiscal receipts for venue tills in France, Germany and Austria. A till posts a sale; it is stored once
+      however often the till retries, sent with its market's fiscal payload to a signing partner (a mock here), and given a
+      gapless receipt number per till.</p>
+    <p class="muted">C# on .NET 10 with AWS Lambda, API Gateway, SQS, DynamoDB, S3 and SES; SQL Server for the journal;
+      infrastructure in CDK for C#; an Angular till. Six load and failure drills on AWS put 23,223 sales through it.
+      Afterwards a check of DynamoDB against the SQL journal and k6's counts, across all 23,277 stored sales, found none
+      lost or duplicated and no gap in any till's receipt numbers.</p>
+    <p class="links">
+      <a href="https://github.com/Zabedz/fiscal-till-pipeline">Code</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="drills.html">How the drills work</a>
+      <a href="#notes">All notes</a>
+    </p>
+  </header>
+
+  <section>
+    <div class="prose">
+      <h2>How a sale moves</h2>
+      <ol>
+        <li>The till posts the sale with its venue's API key and an <code>Idempotency-Key</code>. CreateSale stores it with a
+          conditional put on an id derived from the venue and key, queues it, and answers 202. The till measured about
+          100 ms, most of it network.</li>
+        <li>FiscaliseWorker takes sales off the fiscalise queue and has the signing partner sign each one. A partner
+          outage leaves the sale on the queue, retried with backoff.</li>
+        <li>The journal worker takes each till's sales one at a time from a FIFO queue. SQL Server gives each sale the
+          till's next receipt number in the transaction that records it.</li>
+        <li>The receipt is written to S3 and emailed when the customer gave an address. The till polls until the receipt
+          number arrives.</li>
+      </ol>
+    </div>
+    <figure>
+      <div class="diagram" tabindex="0" role="region" aria-label="Architecture diagram"><img src="diagrams/architecture.svg" alt="Architecture: the till on the laptop calls API Gateway; CreateSale stores the sale in DynamoDB and queues it; FiscaliseWorker signs it through the mock partner and queues it for the journal; the journal worker on the laptop reads the sale, numbers it in SQL Server, writes the receipt to S3 and emails it when the customer gave an address. Messages that keep failing go to a dead-letter queue, whose CloudWatch alarm emails through SNS." width="1200" height="640"></div>
+      <figcaption>Arrows in the text colour carry every sale. Red arrows are the failure path, ending in an email from a
+        CloudWatch alarm.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="prose">
+      <h2>The drills</h2>
+      <p>A script drove each drill from the laptop: k6 for load, a switch in SSM Parameter Store to make the mock partner
+        slow or unavailable, and bad messages sent straight to the queue. Afterwards a check compared DynamoDB with the SQL
+        journal sale by sale, and with k6's accepted count per run.</p>
+    </div>
+    <figure>
+      <div class="diagram" tabindex="0" role="region" aria-label="Drills diagram"><img src="diagrams/drills.svg" alt="Drills: a drill script sets the partner switches in SSM, runs k6 against API Gateway, sends bad messages straight to the fiscalise queue, and logs each drill's window for the dashboard. The partner answers 503 or waits 2 s; API Gateway answers 429 above 50 requests a second per venue; the bad messages reach the dead-letter queue, whose alarm emails through SNS." width="1200" height="520"></div>
+      <figcaption>Red arrows are the faults the drills injected and what they set off.</figcaption>
+    </figure>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Drill results">
+      <table>
+        <thead><tr><th>Drill</th><th>Load</th><th>Accepted</th><th>p95 at the till</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Baseline</td><td>Up to 10 sales/s for 10 min, 7% resent</td><td>5,429</td><td>179 ms</td><td>All 381 resends got the original sale back.</td></tr>
+          <tr><td>Slow partner</td><td>Partner answers in 2 s, up to 20 sales/s</td><td>4,829</td><td>155 ms</td><td>Signing fell behind: 89 s at p95, 107 s at most. The API was unaffected.</td></tr>
+          <tr><td>Partner outage</td><td>Partner returns 503 for 4 of 8 minutes</td><td>4,229</td><td>136 ms</td><td>Every sale made during the outage was signed within 300 s.</td></tr>
+          <tr><td>Poison messages</td><td>5 malformed or unknown-sale messages</td><td></td><td></td><td>All 5 in the dead-letter queue within 4 s; the alarm emailed about 3 minutes later.</td></tr>
+          <tr><td>Burst</td><td>One venue at 150 requests/s against its 50/s limit</td><td>3,306</td><td>123 ms, with the 429s</td><td>6,041 requests got 429; the other venues got 241 of 241 through.</td></tr>
+          <tr><td>Baseline again</td><td>As the first, journal worker at 16 consumers</td><td>5,430</td><td>141 ms</td><td>Receipt number 0.49 s after the sale (p95).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="prose">
+      <h2>The dashboard during the drills</h2>
+      <p>CloudWatch, 20:05 to 21:05 UTC on 27 October 2026. Each dashed line marks when a drill started. The Outage line
+        marks the partner going down, two minutes into that drill's load, and on the smaller graphs one line marks Poison
+        and Burst, which started a minute apart.</p>
+    </div>
+    <div class="group">
+      <h3>Queues</h3>
+      <div class="graphs">
+        <figure>
+          <a href="assets/graphs/sales-waiting-to-be-signed.png"><img src="assets/graphs/sales-waiting-to-be-signed.png" alt="Sales waiting to be signed: up to 1,300 waiting during the slow drill; during the outage about 2,400 backing off while the waiting count stays at zero." width="1100" height="440" loading="lazy"></a>
+          <figcaption>Slow partner: a queue of up to 1,300 sales. Outage: about 2,400 sales backing off, hidden from the
+            waiting count because each is in flight between retries.</figcaption>
+        </figure>
+        <figure>
+          <a href="assets/graphs/dead-letter-queues.png"><img src="assets/graphs/dead-letter-queues.png" alt="Dead-letter queues: the fiscalise dead-letter queue jumps to 5 at the poison drill and stays there; the journal dead-letter queue stays at 0." width="640" height="360" loading="lazy"></a>
+          <figcaption>The 5 poison messages land in the fiscalise dead-letter queue. No real sale reached either one.</figcaption>
+        </figure>
+        <figure>
+          <a href="assets/graphs/signed-sales-waiting-for-the-journal.png"><img src="assets/graphs/signed-sales-waiting-for-the-journal.png" alt="Signed sales waiting for the journal: the backlog climbs to about 6,000 sales and 11 minutes with 4 journal consumers, then drains to zero between 20:41 and 20:47." width="640" height="360" loading="lazy"></a>
+          <figcaption>With 4 journal consumers the backlog reached about 6,000 sales and 11 minutes. At 20:41 the worker
+            restarted with 16 and cleared it in about five minutes.</figcaption>
+        </figure>
+      </div>
+    </div>
+    <div class="group">
+      <h3>Workers</h3>
+      <div class="graphs">
+        <figure>
+          <a href="assets/graphs/fiscalise-worker.png"><img src="assets/graphs/fiscalise-worker.png" alt="Fiscalise worker: concurrency pinned at its limit of 5 during the slow and outage drills; invocations peak at about 3,700 a minute during the outage retries; no errors or throttles." width="1100" height="440" loading="lazy"></a>
+          <figcaption>Concurrency sits at its cap of 5 through the slow and outage drills; the outage peak is retries.</figcaption>
+        </figure>
+        <figure>
+          <a href="assets/graphs/fiscalise-worker-duration.png"><img src="assets/graphs/fiscalise-worker-duration.png" alt="Fiscalise worker duration: p50 about 2,150 ms and p95 up to 3,100 ms in the slow drill; under 100 ms for the rest of the hour." width="640" height="360" loading="lazy"></a>
+          <figcaption>About 2 s per batch while the partner took 2 s; near zero during the outage, when it answered 503 at
+            once.</figcaption>
+        </figure>
+        <figure>
+          <a href="assets/graphs/mock-signing-partner.png"><img src="assets/graphs/mock-signing-partner.png" alt="Mock signing partner: p95 duration about 2,000 ms during the slow drill; calls rise to about 3,800 a minute during the outage; no Lambda errors." width="640" height="360" loading="lazy"></a>
+          <figcaption>2 s answers in the slow drill. The outage's 503s are responses, so Lambda counts no errors.</figcaption>
+        </figure>
+      </div>
+    </div>
+    <div class="group">
+      <h3>Till API</h3>
+      <div class="graphs">
+        <figure>
+          <a href="assets/graphs/till-api-requests.png"><img src="assets/graphs/till-api-requests.png" alt="Till API requests per minute: about 600 during the baselines, about 1,300 in the slow drill, and a spike of about 9,000 with thousands of 4xx responses during the burst; no 5xx." width="1100" height="440" loading="lazy"></a>
+          <figcaption>The burst: about 9,000 requests in a minute, most of them answered 429 by the usage plan.</figcaption>
+        </figure>
+        <figure>
+          <a href="assets/graphs/till-api-latency.png"><img src="assets/graphs/till-api-latency.png" alt="Till API latency inside AWS: p50 25 to 30 ms and p95 40 to 50 ms through every drill, with spikes of about 1 s at 20:11 and 210 ms at 20:29 as load resumed." width="640" height="360" loading="lazy"></a>
+          <figcaption>Inside AWS, p95 stays around 40-50 ms while signing is slow or down. The spikes are cold starts as load
+            resumes.</figcaption>
+        </figure>
+        <figure>
+          <a href="assets/graphs/createsale.png"><img src="assets/graphs/createsale.png" alt="CreateSale: duration p50 about 13 ms and p95 25 to 35 ms; concurrency 2 to 5, jumping past 50 in the burst." width="640" height="360" loading="lazy"></a>
+          <figcaption>CreateSale takes about 13 ms at p50; most of the 105 ms median the till measured is the network.
+            Concurrency jumps during the burst.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="prose">
+      <h2>Retries on the fiscalise queue</h2>
+      <p>A failed signing hides the sale on the queue for 5, 10, 20, 40, then 60 s, each up to 20% longer. A sale queued
+        as a 4-minute outage began fails 7 of its 10 receives and is signed at 255 s. A malformed message is retried at
+        once and dead-letters in seconds.</p>
+    </div>
+    <figure>
+      <div class="diagram" tabindex="0" role="region" aria-label="Retry timeline"><img src="diagrams/fiscalise-retries.svg" alt="Timeline to scale: a malformed message is received 10 times within seconds and dead-lettered; a sale queued as a 4-minute outage began fails 7 times and is signed at 255 seconds; in an outage that outlasts the 10th receive, at 375 to 450 seconds, the message is dead-lettered." width="1000" height="300"></div>
+    </figure>
+  </section>
+
+  <section class="prose">
+    <h2>What the drills found</h2>
+    <ul>
+      <li><strong>SQL Server deadlocks.</strong> 213 in the first 7 minutes. OPENJSON's fixed guess of 50 rows, applied
+        twice, made SQL Server expect 2,500 lines per sale and check their foreign key by scanning every journal entry. A
+        loop join hint turned the check into a seek, and a test now reproduces the deadlock against the old procedure.</li>
+      <li><strong>Journal throughput.</strong> 4 consumers managed 8 sales/s against 10-20 arriving, with SQL Server at
+        20% CPU: each consumer was waiting on round trips to AWS. 16 consumers managed 31/s.</li>
+      <li><strong>Signing throughput.</strong> With a 2 s partner, the worker's limit of 5 concurrent invocations signs
+        about 15 sales/s. The limit protects the partner.</li>
+      <li><strong>A blind spot on the dashboard.</strong> The queue graph now plots sales that are backing off.</li>
+    </ul>
+  </section>
+
+  <section class="prose">
+    <h2>Known limits</h2>
+    <ul>
+      <li>The signing partner is a mock, and signing happens after the till accepts the sale. KassenSichV and RKSV expect
+        the signature at the time of sale.</li>
+      <li>Receipt numbers are assigned after signing; RKSV and NF525 chain the number into the signature.</li>
+      <li>API keys meter each venue. Anyone holding a key can post sales as that venue.</li>
+      <li>The journal worker and SQL Server ran on a laptop.</li>
+    </ul>
+    <p>The full list is in the <a href="https://github.com/Zabedz/fiscal-till-pipeline#known-limits">README</a>.</p>
+  </section>
+
+  <section class="prose" id="notes">
+    <h2>Notes</h2>
+    <ul>
+      <li><a href="architecture.html">Architecture</a>: a sale's path, where each part runs, the design choices.</li>
+      <li><a href="aws-resources.html">AWS resources</a>: each resource in the console and the code that defines it.</li>
+      <li><a href="queues-and-failures.html">Queues and failures</a>: what happens to a message in each failure case.</li>
+      <li><a href="drills.html">Drills</a>: how each drill injected its fault, and what the check compares.</li>
+      <li><a href="codebase.html">Codebase</a>: directories, key files, scripts and tests.</li>
+      <li><a href="domain.html">Domain</a>: NF525, KassenSichV, RKSV, VAT rates and API answers.</li>
+    </ul>
+  </section>
+</main>
+<footer>Drills run on 27 October 2026 in AWS eu-west-2. Not affiliated with ROLLER.</footer>
+</body>
+</html>

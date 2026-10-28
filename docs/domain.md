@@ -43,7 +43,7 @@ Validation runs before the idempotency check, so a changed body that is also inv
 
 Prices include VAT, in integer cents. VAT per line is `gross x rate / (100 + rate)`, rounded half away from zero
 (`Math.Round` defaults to banker's rounding, so the code passes `MidpointRounding.AwayFromZero`). Totals add the
-rounded lines. [config/markets.json](../config/markets.json) holds the rates:
+rounded lines. [config/markets.json](https://github.com/Zabedz/fiscal-till-pipeline/blob/main/config/markets.json) holds the rates:
 
 | Market | Standard rate | Reduced rates | Dated changes |
 | --- | --- | --- | --- |

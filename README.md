@@ -72,10 +72,10 @@ k6 drove 50 tills (17 Paris, 17 Berlin, 16 Vienna) on 27 October 2026, resending
 | Drill | Load | Accepted | API p95 | Signed p95 | Result |
 | --- | --- | --- | --- | --- | --- |
 | Baseline, 4 journal consumers | 10/s for 10 min | 5,429 | 179 ms | 0.09 s | All 381 resends returned the original sale. |
-| Slow partner | 20/s for 5 min, partner answers in 2 s | 4,829 | 155 ms | 89 s | Signing ran at 15-17/s, so a queue built up; the API was unaffected. |
+| Slow partner | 20/s for 5 min, partner answers in 2 s | 4,829 | 155 ms | 89 s | Signing ran at about 15/s, so a queue built up; the API was unaffected. |
 | Partner outage | 10/s for 8 min, partner down 4 min | 4,229 | 136 ms | 283 s | Sales made during the outage signed within 300 s, none dead-lettered. |
 | Poison messages | 5 malformed or unknown-sale messages | | | | All 5 in the DLQ within 4 s; the alarm emailed 3 min later. |
-| Burst | paris-01 at 150/s for 1 min, Berlin and Vienna 4/s between them | 3,306 | 123 ms | 1.6 s | paris-01 got 6,041 429s and about 51/s through; Berlin and Vienna got 241 of 241. |
+| Burst | paris-01 at 150/s for 1 min, Berlin and Vienna 4/s between them | 3,306 | 123 ms, with the 429s | 1.6 s | paris-01 got 6,041 429s and about 51/s through; Berlin and Vienna got 241 of 241. |
 | Baseline, 16 journal consumers | 10/s for 10 min | 5,430 | 141 ms | 0.08 s | Receipt number 0.35 s after the sale (p50), 0.49 s (p95). |
 
 "Signed" is the time from sale to partner signature. The first five drills ran with 4 journal consumers, which fell
@@ -105,7 +105,7 @@ After the drills, with 23,277 sales:
   minutes behind. Sixteen managed 31/s; SQL Server sat at 20% CPU, so each consumer waits on round trips to AWS. 16 is now
   the default, and the rerun baseline had receipts within 0.49 s (p95).
 - **Signing throughput.** With a 2 s partner, the worker's cap of 5 concurrent invocations of 10 sales each signs about
-  16/s. The cap protects the partner; raising it trades partner load for lag.
+  15/s. The cap protects the partner; raising it trades partner load for lag.
 - **Outages.** Backoff caps at 60 s plus up to 20% jitter, so signing resumes within about a minute of recovery. A sale
   reaches its 10th receive 375 to 450 s after it was queued, so an outage longer than that dead-letters sales; they need
   a redrive once the partner is back.

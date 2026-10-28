@@ -52,9 +52,9 @@
 | --- | --- |
 | `scripts/publish-lambdas.sh` | Publishes the three Lambda projects to `artifacts/`; `cdk` runs it before synth |
 | `scripts/teardown.sh` | Deletes RollerTill through CloudFormation |
-| `scripts/journal-db.sh up \| test \| sql \| down` | Local SQL Server: start and apply the schema, run tests against it, open a shell, stop |
+| `scripts/journal-db.sh` with `up`, `test`, `sql` or `down` | Local SQL Server: start and apply the schema, run tests against it, open a shell, stop |
 | `scripts/journal.sh` | Journal worker. Reads the RollerTill outputs, `.env` (from `journal-db.sh up`) and `alertEmail` in `cdk.context.json` as the SES sender. |
-| `scripts/partner.sh healthy \| slow <ms> \| errors <rate> \| outage` | Partner switches |
+| `scripts/partner.sh` with `healthy`, `slow <ms>`, `errors <rate>` or `outage` | Partner switches |
 | `scripts/till-config.sh` | Writes the till's `config.json` with the API URL and key values |
 | `load/drill.sh <drill>` | One drill |
 | `python3 scripts/verify.py` | Invariant checks after the drills |

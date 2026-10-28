@@ -1,6 +1,6 @@
 # Notes
 
-Running roller and the drill results: [top-level README](../README.md).
+Running roller and the drill results: [top-level README](https://github.com/Zabedz/fiscal-till-pipeline).
 
 | Question | Read |
 | --- | --- |
