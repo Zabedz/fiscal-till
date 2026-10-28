@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" width="1200" height="640" role="img" aria-label="Architecture: the till on the laptop calls API Gateway in AWS; CreateSale stores the sale in DynamoDB and queues it on the fiscalise queue; FiscaliseWorker signs it through the mock partner and queues it on the FIFO journal queue; the journal worker on the laptop reads the signed sale, numbers it in SQL Server running in Docker, writes the receipt to S3, sets the receipt number on the sale, and emails it through SES when the customer gave an address. Messages that keep failing go to a dead-letter queue, whose CloudWatch alarm emails through SNS.">
+<title>Architecture: the till on the laptop calls API Gateway in AWS; CreateSale stores the sale in DynamoDB and queues it on the fiscalise queue; FiscaliseWorker signs it through the mock partner and queues it on the FIFO journal queue; the journal worker on the laptop reads the signed sale, numbers it in SQL Server running in Docker, writes the receipt to S3, sets the receipt number on the sale, and emails it through SES when the customer gave an address. Messages that keep failing go to a dead-letter queue, whose CloudWatch alarm emails through SNS.</title>
+<style>
+:root { --bg: #f5f7f9; --fg: #16202b; --muted: #566271; --box: #ffffff; --line: #aeb8c4;
+  --zone-aws: #e8eef6; --zone-aws-line: #c3d0e0; --zone-local: #edf1ec; --zone-local-line: #c6d0c4;
+  --fault: #b42318; --fault-wash: #f9e1de; --observe: #2f5da8; --ok: #1d7a4b;
+  --sans: -apple-system, "Segoe UI", system-ui, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #10141a; --fg: #e3e8ee; --muted: #9ba7b6; --box: #18202a; --line: #4a5462;
+    --zone-aws: #152031; --zone-aws-line: #2b3d55; --zone-local: #17211a; --zone-local-line: #2f4033;
+    --fault: #f2786d; --fault-wash: #3b1f1e; --observe: #7ea6f2; --ok: #4cc38a; } }
+.page { fill: var(--bg); }
+
+.zone-aws { fill: var(--zone-aws); stroke: var(--zone-aws-line); }
+.zone-local { fill: var(--zone-local); stroke: var(--zone-local-line); }
+.zl { font: 600 12px var(--sans); fill: var(--muted); letter-spacing: 0.02em; }
+.box { fill: var(--box); stroke: var(--line); stroke-width: 1.2; }
+.box.fault { stroke: var(--fault); }
+.box.observe { stroke: var(--observe); }
+.n { font: 600 12.5px var(--sans); fill: var(--fg); }
+.m { font: 500 12px var(--mono); fill: var(--fg); }
+.s { font: 400 11px var(--sans); fill: var(--muted); }
+.l { font: 400 11px var(--sans); fill: var(--muted); }
+.l.fault { fill: var(--fault); }
+.l.observe { fill: var(--observe); }
+.flow { stroke: var(--fg); stroke-width: 1.4; fill: none; }
+.flow.fault { stroke: var(--fault); }
+.flow.observe { stroke: var(--observe); }
+.flow.dash { stroke-dasharray: 5 4; }
+.ah { fill: var(--fg); }
+.ah-fault { fill: var(--fault); }
+.ah-observe { fill: var(--observe); }
+.band { fill: var(--fault-wash); }
+.tick { stroke: var(--fault); stroke-width: 2; }
+.ok { fill: var(--ok); }
+.dlq { fill: var(--fault); }
+.axis { stroke: var(--muted); stroke-width: 1; }
+</style>
+<rect class="page" width="1200" height="640" rx="12"/>
+          <defs>
+            <marker id="f1-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" class="ah"/></marker>
+            <marker id="f1-af" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" class="ah-fault"/></marker>
+          </defs>
+
+          <rect class="zone-local" x="12" y="190" width="140" height="136" rx="10"/>
+          <text class="zl" x="24" y="210">Laptop</text>
+          <polygon class="zone-aws" points="160,40 892,40 892,322 1188,322 1188,628 160,628"/>
+          <text class="zl" x="172" y="60">AWS eu-west-2, RollerTill stack</text>
+          <rect class="zone-local" x="900" y="40" width="288" height="274" rx="10"/>
+          <text class="zl" x="912" y="60">Laptop</text>
+
+          <rect class="box" x="172" y="70" width="116" height="56" rx="6"/>
+          <text class="n" x="230" y="94" text-anchor="middle">GetSale</text>
+          <text class="s" x="230" y="112" text-anchor="middle">Lambda</text>
+          <rect class="box" x="320" y="70" width="560" height="56" rx="6"/>
+          <text class="n" x="600" y="94" text-anchor="middle">Sales table</text>
+          <text class="s" x="600" y="112" text-anchor="middle">DynamoDB, one item per sale with its Status and Version</text>
+
+          <rect class="box" x="24" y="230" width="116" height="56" rx="6"/>
+          <text class="n" x="82" y="254" text-anchor="middle">Angular till</text>
+          <text class="s" x="82" y="272" text-anchor="middle">localhost:4200</text>
+          <rect class="box" x="172" y="230" width="116" height="56" rx="6"/>
+          <text class="n" x="230" y="254" text-anchor="middle">API Gateway</text>
+          <text class="s" x="230" y="272" text-anchor="middle">key per venue</text>
+          <rect class="box" x="320" y="230" width="116" height="56" rx="6"/>
+          <text class="n" x="378" y="254" text-anchor="middle">CreateSale</text>
+          <text class="s" x="378" y="272" text-anchor="middle">Lambda</text>
+          <rect class="box" x="468" y="230" width="116" height="56" rx="6"/>
+          <text class="n" x="526" y="254" text-anchor="middle">Fiscalise queue</text>
+          <text class="s" x="526" y="272" text-anchor="middle">SQS standard</text>
+          <rect class="box" x="616" y="230" width="116" height="56" rx="6"/>
+          <text class="n" x="674" y="254" text-anchor="middle">FiscaliseWorker</text>
+          <text class="s" x="674" y="272" text-anchor="middle">Lambda</text>
+          <rect class="box" x="764" y="230" width="116" height="56" rx="6"/>
+          <text class="n" x="822" y="254" text-anchor="middle">Journal queue</text>
+          <text class="s" x="822" y="272" text-anchor="middle">SQS FIFO, per till</text>
+          <rect class="box" x="912" y="230" width="116" height="56" rx="6"/>
+          <text class="n" x="970" y="254" text-anchor="middle">Journal worker</text>
+          <text class="s" x="970" y="272" text-anchor="middle">.NET, 16 consumers</text>
+          <rect class="box" x="1060" y="230" width="116" height="56" rx="6"/>
+          <text class="n" x="1118" y="254" text-anchor="middle">SQL Server</text>
+          <text class="s" x="1118" y="272" text-anchor="middle">Docker, numbering</text>
+
+          <line class="flow" x1="140" y1="258" x2="170" y2="258" marker-end="url(#f1-a)"/>
+          <line class="flow" x1="288" y1="258" x2="318" y2="258" marker-end="url(#f1-a)"/>
+          <line class="flow" x1="436" y1="258" x2="466" y2="258" marker-end="url(#f1-a)"/>
+          <line class="flow" x1="584" y1="258" x2="614" y2="258" marker-end="url(#f1-a)"/>
+          <line class="flow" x1="732" y1="258" x2="762" y2="258" marker-end="url(#f1-a)"/>
+          <line class="flow" x1="880" y1="258" x2="910" y2="258" marker-end="url(#f1-a)"/>
+          <line class="flow" x1="1028" y1="258" x2="1058" y2="258" marker-end="url(#f1-a)"/>
+          <text class="l" x="304" y="222" text-anchor="middle">POST</text>
+          <text class="l" x="452" y="222" text-anchor="middle">sale id</text>
+          <text class="l" x="600" y="222" text-anchor="middle">batches of 10</text>
+          <text class="l" x="748" y="222" text-anchor="middle">sale id</text>
+          <text class="l" x="1044" y="222" text-anchor="middle">RecordSale</text>
+
+          <line class="flow" x1="230" y1="230" x2="230" y2="128" marker-end="url(#f1-a)"/>
+          <text class="l" x="238" y="184">GET</text>
+          <line class="flow" x1="288" y1="98" x2="318" y2="98" marker-end="url(#f1-a)"/>
+          <text class="l" x="303" y="90" text-anchor="middle">reads</text>
+          <line class="flow" x1="378" y1="230" x2="378" y2="128" marker-end="url(#f1-a)"/>
+          <text class="l" x="386" y="184">put if new</text>
+          <line class="flow" x1="674" y1="230" x2="674" y2="128" marker-end="url(#f1-a)"/>
+          <text class="l" x="682" y="184">mark SIGNED</text>
+          <path class="flow" d="M1000,228 V98 H882" marker-start="url(#f1-a)" marker-end="url(#f1-a)"/>
+          <text class="l" x="1008" y="150">reads the sale,</text>
+          <text class="l" x="1008" y="164">sets receipt no.</text>
+
+          <line class="flow fault dash" x1="526" y1="286" x2="526" y2="358" marker-end="url(#f1-af)"/>
+          <text class="l fault" x="534" y="326">10 failed receives</text>
+          <line class="flow" x1="674" y1="286" x2="674" y2="358" marker-end="url(#f1-a)"/>
+          <text class="l" x="682" y="326">sign</text>
+          <line class="flow fault dash" x1="822" y1="286" x2="822" y2="358" marker-end="url(#f1-af)"/>
+          <text class="l fault" x="830" y="326">5 failed</text>
+          <line class="flow" x1="940" y1="286" x2="940" y2="358" marker-end="url(#f1-a)"/>
+          <text class="l" x="946" y="350">receipt</text>
+          <path class="flow" d="M1016,286 V340 H1118 V358" marker-end="url(#f1-a)"/>
+          <text class="l" x="1067" y="334" text-anchor="middle">email if given</text>
+
+          <rect class="box fault" x="468" y="360" width="116" height="56" rx="6"/>
+          <text class="n" x="526" y="384" text-anchor="middle">Fiscalise DLQ</text>
+          <text class="s" x="526" y="402" text-anchor="middle">kept 14 days</text>
+          <rect class="box" x="616" y="360" width="116" height="56" rx="6"/>
+          <text class="n" x="674" y="384" text-anchor="middle">Mock partner</text>
+          <text class="s" x="674" y="402" text-anchor="middle">function URL</text>
+          <rect class="box fault" x="764" y="360" width="116" height="56" rx="6"/>
+          <text class="n" x="822" y="384" text-anchor="middle">Journal DLQ</text>
+          <text class="s" x="822" y="402" text-anchor="middle">kept 14 days</text>
+          <rect class="box" x="912" y="360" width="116" height="56" rx="6"/>
+          <text class="n" x="970" y="384" text-anchor="middle">Receipts</text>
+          <text class="s" x="970" y="402" text-anchor="middle">S3, written once</text>
+          <rect class="box" x="1060" y="360" width="116" height="56" rx="6"/>
+          <text class="n" x="1118" y="384" text-anchor="middle">SES</text>
+          <text class="s" x="1118" y="402" text-anchor="middle">RollerGuardrails</text>
+
+          <line class="flow fault dash" x1="526" y1="416" x2="526" y2="468" marker-end="url(#f1-af)"/>
+          <line class="flow fault dash" x1="822" y1="416" x2="822" y2="468" marker-end="url(#f1-af)"/>
+          <rect class="box fault" x="468" y="470" width="412" height="48" rx="6"/>
+          <text class="n" x="674" y="490" text-anchor="middle">CloudWatch alarm per DLQ</text>
+          <text class="s" x="674" y="508" text-anchor="middle">fires on any message for 1 minute</text>
+          <rect class="box observe" x="172" y="470" width="264" height="48" rx="6"/>
+          <text class="n" x="304" y="490" text-anchor="middle">Dashboard roller-till</text>
+          <text class="s" x="304" y="508" text-anchor="middle">graphs the queues, workers and API</text>
+
+          <line class="flow fault" x1="674" y1="518" x2="674" y2="566" marker-end="url(#f1-af)"/>
+          <rect class="box fault" x="468" y="568" width="412" height="44" rx="6"/>
+          <text class="n" x="674" y="586" text-anchor="middle">SNS alarm topic</text>
+          <text class="s" x="674" y="602" text-anchor="middle">RollerGuardrails stack</text>
+          <line class="flow fault" x1="468" y1="590" x2="332" y2="590" marker-end="url(#f1-af)"/>
+          <text class="l fault" x="400" y="582" text-anchor="middle">email</text>
+          <text class="l" x="324" y="594" text-anchor="end">alert inbox</text>
+        </svg>

@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" width="1000" height="300" role="img" aria-label="Timeline to scale: a malformed message is received 10 times within seconds and dead-lettered; a sale queued as the 4-minute outage began fails 7 times and is signed at 255 seconds; in an outage that outlasts the 10th receive, at 375 seconds or up to 450 with jitter, all 10 receives fail and the message is dead-lettered at about 435 seconds.">
+<title>Timeline to scale: a malformed message is received 10 times within seconds and dead-lettered; a sale queued as the 4-minute outage began fails 7 times and is signed at 255 seconds; in an outage that outlasts the 10th receive, at 375 seconds or up to 450 with jitter, all 10 receives fail and the message is dead-lettered at about 435 seconds.</title>
+<style>
+:root { --bg: #f5f7f9; --fg: #16202b; --muted: #566271; --box: #ffffff; --line: #aeb8c4;
+  --zone-aws: #e8eef6; --zone-aws-line: #c3d0e0; --zone-local: #edf1ec; --zone-local-line: #c6d0c4;
+  --fault: #b42318; --fault-wash: #f9e1de; --observe: #2f5da8; --ok: #1d7a4b;
+  --sans: -apple-system, "Segoe UI", system-ui, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #10141a; --fg: #e3e8ee; --muted: #9ba7b6; --box: #18202a; --line: #4a5462;
+    --zone-aws: #152031; --zone-aws-line: #2b3d55; --zone-local: #17211a; --zone-local-line: #2f4033;
+    --fault: #f2786d; --fault-wash: #3b1f1e; --observe: #7ea6f2; --ok: #4cc38a; } }
+.page { fill: var(--bg); }
+
+.zone-aws { fill: var(--zone-aws); stroke: var(--zone-aws-line); }
+.zone-local { fill: var(--zone-local); stroke: var(--zone-local-line); }
+.zl { font: 600 12px var(--sans); fill: var(--muted); letter-spacing: 0.02em; }
+.box { fill: var(--box); stroke: var(--line); stroke-width: 1.2; }
+.box.fault { stroke: var(--fault); }
+.box.observe { stroke: var(--observe); }
+.n { font: 600 12.5px var(--sans); fill: var(--fg); }
+.m { font: 500 12px var(--mono); fill: var(--fg); }
+.s { font: 400 11px var(--sans); fill: var(--muted); }
+.l { font: 400 11px var(--sans); fill: var(--muted); }
+.l.fault { fill: var(--fault); }
+.l.observe { fill: var(--observe); }
+.flow { stroke: var(--fg); stroke-width: 1.4; fill: none; }
+.flow.fault { stroke: var(--fault); }
+.flow.observe { stroke: var(--observe); }
+.flow.dash { stroke-dasharray: 5 4; }
+.ah { fill: var(--fg); }
+.ah-fault { fill: var(--fault); }
+.ah-observe { fill: var(--observe); }
+.band { fill: var(--fault-wash); }
+.tick { stroke: var(--fault); stroke-width: 2; }
+.ok { fill: var(--ok); }
+.dlq { fill: var(--fault); }
+.axis { stroke: var(--muted); stroke-width: 1; }
+</style>
+<rect class="page" width="1000" height="300" rx="12"/>
+          <line class="tick" x1="650" y1="16" x2="650" y2="32"/>
+          <text class="l" x="658" y="28">failed receive</text>
+          <circle class="ok" cx="770" cy="24" r="5"/>
+          <text class="l" x="780" y="28">signed</text>
+          <rect class="dlq" x="850" y="19" width="10" height="10"/>
+          <text class="l" x="866" y="28">moved to the DLQ</text>
+
+          <text class="n" x="16" y="66">Malformed message</text>
+          <text class="s" x="16" y="82">made visible at once</text>
+          <line class="tick" x1="210" y1="58" x2="210" y2="82"/>
+          <line class="tick" x1="210.8" y1="58" x2="210.8" y2="82"/>
+          <line class="tick" x1="211.6" y1="58" x2="211.6" y2="82"/>
+          <line class="tick" x1="212.4" y1="58" x2="212.4" y2="82"/>
+          <line class="tick" x1="213.2" y1="58" x2="213.2" y2="82"/>
+          <line class="tick" x1="214" y1="58" x2="214" y2="82"/>
+          <line class="tick" x1="214.8" y1="58" x2="214.8" y2="82"/>
+          <line class="tick" x1="215.6" y1="58" x2="215.6" y2="82"/>
+          <line class="tick" x1="216.4" y1="58" x2="216.4" y2="82"/>
+          <line class="tick" x1="217.2" y1="58" x2="217.2" y2="82"/>
+          <rect class="dlq" x="220" y="65" width="10" height="10"/>
+          <text class="l" x="238" y="74">10 receives within seconds, then the DLQ</text>
+
+          <text class="n" x="16" y="136">Sale in the 4-minute outage</text>
+          <text class="s" x="16" y="152">partner back at 240 s</text>
+          <rect class="band" x="210" y="126" width="405.3" height="28"/>
+          <text class="l fault" x="214" y="120">partner down</text>
+          <line class="tick" x1="210" y1="128" x2="210" y2="152"/>
+          <line class="tick" x1="218.4" y1="128" x2="218.4" y2="152"/>
+          <line class="tick" x1="235.3" y1="128" x2="235.3" y2="152"/>
+          <line class="tick" x1="269.1" y1="128" x2="269.1" y2="152"/>
+          <line class="tick" x1="336.7" y1="128" x2="336.7" y2="152"/>
+          <line class="tick" x1="438" y1="128" x2="438" y2="152"/>
+          <line class="tick" x1="539.3" y1="128" x2="539.3" y2="152"/>
+          <circle class="ok" cx="640.7" cy="140" r="6"/>
+          <text class="l" x="652" y="144">signed at 255 s</text>
+
+          <text class="n" x="16" y="206">Outage past the 10th receive</text>
+          <text class="s" x="16" y="222">10th receive at 375 to 450 s</text>
+          <rect class="band" x="210" y="196" width="760" height="28"/>
+          <line class="tick" x1="210" y1="198" x2="210" y2="222"/>
+          <line class="tick" x1="218.4" y1="198" x2="218.4" y2="222"/>
+          <line class="tick" x1="235.3" y1="198" x2="235.3" y2="222"/>
+          <line class="tick" x1="269.1" y1="198" x2="269.1" y2="222"/>
+          <line class="tick" x1="336.7" y1="198" x2="336.7" y2="222"/>
+          <line class="tick" x1="438" y1="198" x2="438" y2="222"/>
+          <line class="tick" x1="539.3" y1="198" x2="539.3" y2="222"/>
+          <line class="tick" x1="640.7" y1="198" x2="640.7" y2="222"/>
+          <line class="tick" x1="742" y1="198" x2="742" y2="222"/>
+          <line class="tick" x1="843.3" y1="198" x2="843.3" y2="222"/>
+          <rect class="dlq" x="939.7" y="205" width="10" height="10"/>
+          <text class="l fault" x="950" y="190" text-anchor="end">10th failure, then the DLQ</text>
+
+          <line class="axis" x1="210" y1="252" x2="970" y2="252"/>
+          <line class="axis" x1="210" y1="252" x2="210" y2="257"/>
+          <line class="axis" x1="311.3" y1="252" x2="311.3" y2="257"/>
+          <line class="axis" x1="412.7" y1="252" x2="412.7" y2="257"/>
+          <line class="axis" x1="514" y1="252" x2="514" y2="257"/>
+          <line class="axis" x1="615.3" y1="252" x2="615.3" y2="257"/>
+          <line class="axis" x1="716.7" y1="252" x2="716.7" y2="257"/>
+          <line class="axis" x1="818" y1="252" x2="818" y2="257"/>
+          <line class="axis" x1="919.3" y1="252" x2="919.3" y2="257"/>
+          <text class="l" x="210" y="270" text-anchor="middle">0</text>
+          <text class="l" x="311.3" y="270" text-anchor="middle">60</text>
+          <text class="l" x="412.7" y="270" text-anchor="middle">120</text>
+          <text class="l" x="514" y="270" text-anchor="middle">180</text>
+          <text class="l" x="615.3" y="270" text-anchor="middle">240</text>
+          <text class="l" x="716.7" y="270" text-anchor="middle">300</text>
+          <text class="l" x="818" y="270" text-anchor="middle">360</text>
+          <text class="l" x="919.3" y="270" text-anchor="middle">420</text>
+          <text class="l" x="590" y="292" text-anchor="middle">seconds after the sale was queued; each wait can run up to 20% longer</text>
+        </svg>

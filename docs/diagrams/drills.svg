@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520" role="img" aria-label="Drills: load/drill.sh on the laptop sets the partner switches in SSM, runs k6 against API Gateway, sends five bad messages straight to the fiscalise queue, and logs each drill window. The partner reads the switches and returns 503s or answers after 2 seconds; the worker puts failed sales back on the queue for 5 to 72 seconds; the bad messages reach the fiscalise DLQ, whose CloudWatch alarm emails through SNS. API Gateway answers 429 above 50 requests a second per venue. The drill windows reach the dashboard on the next cdk deploy.">
+<title>Drills: load/drill.sh on the laptop sets the partner switches in SSM, runs k6 against API Gateway, sends five bad messages straight to the fiscalise queue, and logs each drill window. The partner reads the switches and returns 503s or answers after 2 seconds; the worker puts failed sales back on the queue for 5 to 72 seconds; the bad messages reach the fiscalise DLQ, whose CloudWatch alarm emails through SNS. API Gateway answers 429 above 50 requests a second per venue. The drill windows reach the dashboard on the next cdk deploy.</title>
+<style>
+:root { --bg: #f5f7f9; --fg: #16202b; --muted: #566271; --box: #ffffff; --line: #aeb8c4;
+  --zone-aws: #e8eef6; --zone-aws-line: #c3d0e0; --zone-local: #edf1ec; --zone-local-line: #c6d0c4;
+  --fault: #b42318; --fault-wash: #f9e1de; --observe: #2f5da8; --ok: #1d7a4b;
+  --sans: -apple-system, "Segoe UI", system-ui, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #10141a; --fg: #e3e8ee; --muted: #9ba7b6; --box: #18202a; --line: #4a5462;
+    --zone-aws: #152031; --zone-aws-line: #2b3d55; --zone-local: #17211a; --zone-local-line: #2f4033;
+    --fault: #f2786d; --fault-wash: #3b1f1e; --observe: #7ea6f2; --ok: #4cc38a; } }
+.page { fill: var(--bg); }
+
+.zone-aws { fill: var(--zone-aws); stroke: var(--zone-aws-line); }
+.zone-local { fill: var(--zone-local); stroke: var(--zone-local-line); }
+.zl { font: 600 12px var(--sans); fill: var(--muted); letter-spacing: 0.02em; }
+.box { fill: var(--box); stroke: var(--line); stroke-width: 1.2; }
+.box.fault { stroke: var(--fault); }
+.box.observe { stroke: var(--observe); }
+.n { font: 600 12.5px var(--sans); fill: var(--fg); }
+.m { font: 500 12px var(--mono); fill: var(--fg); }
+.s { font: 400 11px var(--sans); fill: var(--muted); }
+.l { font: 400 11px var(--sans); fill: var(--muted); }
+.l.fault { fill: var(--fault); }
+.l.observe { fill: var(--observe); }
+.flow { stroke: var(--fg); stroke-width: 1.4; fill: none; }
+.flow.fault { stroke: var(--fault); }
+.flow.observe { stroke: var(--observe); }
+.flow.dash { stroke-dasharray: 5 4; }
+.ah { fill: var(--fg); }
+.ah-fault { fill: var(--fault); }
+.ah-observe { fill: var(--observe); }
+.band { fill: var(--fault-wash); }
+.tick { stroke: var(--fault); stroke-width: 2; }
+.ok { fill: var(--ok); }
+.dlq { fill: var(--fault); }
+.axis { stroke: var(--muted); stroke-width: 1; }
+</style>
+<rect class="page" width="1200" height="520" rx="12"/>
+          <defs>
+            <marker id="f2-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" class="ah"/></marker>
+            <marker id="f2-af" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" class="ah-fault"/></marker>
+            <marker id="f2-ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" class="ah-observe"/></marker>
+          </defs>
+
+          <rect class="zone-local" x="12" y="16" width="304" height="488" rx="10"/>
+          <text class="zl" x="24" y="38">Laptop</text>
+          <rect class="zone-aws" x="336" y="16" width="852" height="488" rx="10"/>
+          <text class="zl" x="348" y="38">AWS eu-west-2</text>
+
+          <rect class="box" x="24" y="52" width="280" height="44" rx="6"/>
+          <text class="m" x="164" y="72" text-anchor="middle">load/drill.sh</text>
+          <text class="s" x="164" y="88" text-anchor="middle">runs one drill, then sets the partner healthy</text>
+          <path class="flow" d="M48,96 V458"/>
+          <line class="flow" x1="48" y1="142" x2="94" y2="142" marker-end="url(#f2-a)"/>
+          <text class="l" x="72" y="136" text-anchor="middle">sets</text>
+          <line class="flow" x1="48" y1="234" x2="94" y2="234" marker-end="url(#f2-a)"/>
+          <text class="l" x="72" y="228" text-anchor="middle">runs</text>
+          <line class="flow" x1="48" y1="326" x2="94" y2="326" marker-end="url(#f2-a)"/>
+          <text class="l" x="72" y="320" text-anchor="middle">sends</text>
+          <line class="flow observe" x1="48" y1="458" x2="94" y2="458" marker-end="url(#f2-ao)"/>
+          <text class="l observe" x="72" y="452" text-anchor="middle">logs</text>
+
+          <rect class="box" x="96" y="116" width="208" height="52" rx="6"/>
+          <text class="m" x="200" y="138" text-anchor="middle">scripts/partner.sh</text>
+          <text class="s" x="200" y="156" text-anchor="middle">slow 2000, outage, healthy</text>
+          <rect class="box" x="96" y="208" width="208" height="52" rx="6"/>
+          <text class="m" x="200" y="230" text-anchor="middle">k6 load/till.js</text>
+          <text class="s" x="200" y="248" text-anchor="middle">50 tills, 7% resent</text>
+          <rect class="box" x="96" y="300" width="208" height="52" rx="6"/>
+          <text class="m" x="200" y="322" text-anchor="middle">aws sqs send-message</text>
+          <text class="s" x="200" y="340" text-anchor="middle">5 bad messages</text>
+          <rect class="box observe" x="96" y="432" width="208" height="52" rx="6"/>
+          <text class="m" x="200" y="454" text-anchor="middle">load/drills.json</text>
+          <text class="s" x="200" y="472" text-anchor="middle">each drill's window</text>
+
+          <rect class="box" x="1024" y="116" width="136" height="52" rx="6"/>
+          <text class="n" x="1092" y="138" text-anchor="middle">Partner switches</text>
+          <text class="s" x="1092" y="156" text-anchor="middle">SSM parameter</text>
+          <line class="flow fault" x1="304" y1="142" x2="1022" y2="142" marker-end="url(#f2-af)"/>
+          <text class="l fault" x="660" y="134" text-anchor="middle">latency 2000 ms, or outage on</text>
+
+          <rect class="box" x="352" y="208" width="136" height="52" rx="6"/>
+          <text class="n" x="420" y="230" text-anchor="middle">API Gateway</text>
+          <text class="s" x="420" y="248" text-anchor="middle">50/s per venue key</text>
+          <rect class="box" x="520" y="208" width="136" height="52" rx="6"/>
+          <text class="n" x="588" y="230" text-anchor="middle">CreateSale</text>
+          <text class="s" x="588" y="248" text-anchor="middle">Lambda</text>
+          <rect class="box" x="688" y="208" width="136" height="52" rx="6"/>
+          <text class="n" x="756" y="230" text-anchor="middle">Fiscalise queue</text>
+          <text class="s" x="756" y="248" text-anchor="middle">SQS</text>
+          <rect class="box" x="856" y="208" width="136" height="52" rx="6"/>
+          <text class="n" x="924" y="230" text-anchor="middle">FiscaliseWorker</text>
+          <text class="s" x="924" y="248" text-anchor="middle">Lambda</text>
+          <rect class="box" x="1024" y="208" width="136" height="52" rx="6"/>
+          <text class="n" x="1092" y="230" text-anchor="middle">Mock partner</text>
+          <text class="s" x="1092" y="248" text-anchor="middle">503s or a 2 s delay</text>
+
+          <line class="flow" x1="304" y1="224" x2="350" y2="224" marker-end="url(#f2-a)"/>
+          <line class="flow fault" x1="352" y1="246" x2="306" y2="246" marker-end="url(#f2-af)"/>
+          <text class="l fault" x="420" y="278" text-anchor="middle">429 above 50/s</text>
+          <line class="flow" x1="488" y1="234" x2="518" y2="234" marker-end="url(#f2-a)"/>
+          <line class="flow" x1="656" y1="234" x2="686" y2="234" marker-end="url(#f2-a)"/>
+          <line class="flow" x1="824" y1="234" x2="854" y2="234" marker-end="url(#f2-a)"/>
+          <line class="flow" x1="992" y1="234" x2="1022" y2="234" marker-end="url(#f2-a)"/>
+          <text class="l" x="1008" y="200" text-anchor="middle">sign</text>
+          <line class="flow" x1="1092" y1="168" x2="1092" y2="206" marker-end="url(#f2-a)"/>
+          <text class="l" x="1100" y="192">read every 5 s</text>
+          <path class="flow fault" d="M940,208 V184 H772 V206" marker-end="url(#f2-af)"/>
+          <text class="l fault" x="856" y="178" text-anchor="middle">503: back on the queue for 5 to 72 s</text>
+
+          <path class="flow fault" d="M304,326 H720 V262" marker-end="url(#f2-af)"/>
+          <text class="l fault" x="512" y="318" text-anchor="middle">skips the API</text>
+          <line class="flow fault dash" x1="800" y1="260" x2="800" y2="298" marker-end="url(#f2-af)"/>
+          <text class="l fault" x="808" y="284">10th receive</text>
+          <rect class="box fault" x="744" y="300" width="136" height="52" rx="6"/>
+          <text class="n" x="812" y="322" text-anchor="middle">Fiscalise DLQ</text>
+          <text class="s" x="812" y="340" text-anchor="middle">held 5 within 4 s</text>
+          <line class="flow fault" x1="880" y1="326" x2="910" y2="326" marker-end="url(#f2-af)"/>
+          <rect class="box fault" x="912" y="300" width="136" height="52" rx="6"/>
+          <text class="n" x="980" y="322" text-anchor="middle">CloudWatch alarm</text>
+          <text class="s" x="980" y="340" text-anchor="middle">ALARM 3 min later</text>
+          <line class="flow fault" x1="1048" y1="326" x2="1078" y2="326" marker-end="url(#f2-af)"/>
+          <rect class="box fault" x="1080" y="300" width="96" height="52" rx="6"/>
+          <text class="n" x="1128" y="322" text-anchor="middle">SNS</text>
+          <text class="s" x="1128" y="340" text-anchor="middle">alert email</text>
+
+          <line class="flow observe" x1="304" y1="458" x2="350" y2="458" marker-end="url(#f2-ao)"/>
+          <rect class="box observe" x="352" y="432" width="330" height="52" rx="6"/>
+          <text class="n" x="517" y="454" text-anchor="middle">Dashboard roller-till</text>
+          <text class="s" x="517" y="472" text-anchor="middle">the next cdk deploy marks each drill on every graph</text>
+        </svg>
