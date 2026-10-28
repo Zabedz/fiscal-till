@@ -52,6 +52,7 @@ cdk deploy --all                                # confirm the SNS and SES emails
 scripts/journal-db.sh up                        # SQL Server in Docker, schema applied
 scripts/journal.sh                              # journal worker, leave it running
 scripts/till-config.sh && (cd web/till && npm ci && npm start)   # till on http://localhost:4200
+scripts/publish-till.sh                         # the same till on CloudFront, at the SiteUrl output
 ```
 
 | Task | Command |
@@ -62,11 +63,12 @@ scripts/till-config.sh && (cd web/till && npm ci && npm start)   # till on http:
 | One drill | `load/drill.sh baseline \| slow \| outage \| poison \| burst` |
 | Check invariants after drills | `python3 scripts/verify.py` |
 | Mark drills on the dashboard | `cdk deploy RollerTill` (reads `load/drills.json`) |
+| Publish the till to CloudFront | `scripts/publish-till.sh` (after each deploy; uses the demo keys) |
 | Tear down | `scripts/teardown.sh && scripts/journal-db.sh down` |
 | Remove everything | The above, then `aws cloudformation update-termination-protection --no-enable-termination-protection --stack-name RollerGuardrails` and `aws cloudformation delete-stack --stack-name RollerGuardrails`; `docker compose --env-file .env -f db/compose.yaml down -v` deletes the journal data |
 
-`scripts/teardown.sh` deletes RollerTill. RollerGuardrails (budget, alarm topic, SES identity) has termination protection and
-stays.
+`scripts/teardown.sh` deletes RollerTill, the CloudFront site with it; the next deploy gets a new `SiteUrl`.
+RollerGuardrails (budget, alarm topic, SES identity) has termination protection and stays.
 
 ## Results
 
@@ -120,7 +122,8 @@ After the drills, with 23,277 sales (23,223 from the drills, 54 from a smoke run
 
 | Service | Job |
 | --- | --- |
-| API Gateway (REST) | One usage plan with a key per venue, limiting each key to 50 requests/s, burst 100, 300,000 a day. 200/s per method. |
+| API Gateway (REST) | One usage plan with a key per venue, limiting each key to 50 requests/s, burst 100, 300,000 a day. A demo plan with tighter limits for the public till. 200/s per method. |
+| CloudFront and S3 | The till's public site: the Angular build from a private bucket, with `/sales` passed to the API on the same address. |
 | Lambda (.NET 10, arm64) | CreateSale, GetSale, FiscaliseWorker, mock partner. |
 | DynamoDB | Sales: conditional put for idempotency, `Version` for optimistic locking. Partner: one signing counter per till. |
 | SQS | Fiscalise queue with partial batch failures and per-message backoff. FIFO journal queue grouped per till. A DLQ each. |
@@ -146,6 +149,8 @@ After the drills, with 23,277 sales (23,223 from the drills, 54 from a smoke run
   same till. Austria and France sign a sequential number and chain each receipt to the previous signature.
 - The receipt email is sent before `EmailedAt` is saved, so a crash in between sends it twice.
 - API keys only meter each venue. Anyone holding a key can post sales; production needs an authorizer (Cognito or IAM).
+- The CloudFront till publishes its demo keys in `config.json`, so anyone with the link can post sales, within 5
+  requests/s and 10,000 a day per venue. Its sales are numbered only while the journal worker runs on the laptop.
 - The journal worker runs on a laptop against SQL Server in Docker, emulated on Apple Silicon. Production would run it on ECS
   against RDS.
 - SES is in the sandbox and sends only to verified addresses.

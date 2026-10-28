@@ -1,5 +1,6 @@
-// RollerTill stack, removed by cdk destroy RollerTill: REST API with per-venue keys, the sale and fiscalise
-// Lambdas, sales table, fiscalise and journal queues with DLQs, receipts bucket, DLQ alarms and the dashboard.
+// RollerTill stack, removed by cdk destroy RollerTill: REST API with per-venue and demo keys, the sale and fiscalise
+// Lambdas, sales table, fiscalise and journal queues with DLQs, receipts bucket, DLQ alarms, the dashboard and the
+// till's CloudFront site.
 
 using Amazon.CDK;
 using Amazon.CDK.AWS.APIGateway;
@@ -57,6 +58,11 @@ public sealed class TillStack : Stack
 
     // Per key per day; at REST API prices the three venue keys cost at most about $3 a day.
     private const double VenueDailyQuota = 300_000;
+
+    // The demo keys are published on the public till page, so anyone holding the link gets these limits.
+    private const double DemoRateLimit = 5;
+    private const int DemoBurstLimit = 10;
+    private const double DemoDailyQuota = 10_000;
 
     public TillStack(Construct scope, string id, TillStackProps props) : base(scope, id, props)
     {
@@ -165,11 +171,28 @@ public sealed class TillStack : Stack
         }
         var venueKeys = ToJsonString(keyIdByVenue);
 
+        var demoPlan = api.AddUsagePlan("DemoPlan", new UsagePlanProps
+        {
+            Name = "roller-demo",
+            Throttle = new ThrottleSettings { RateLimit = DemoRateLimit, BurstLimit = DemoBurstLimit },
+            Quota = new QuotaSettings { Limit = DemoDailyQuota, Period = Period.DAY },
+        });
+        demoPlan.AddApiStage(new UsagePlanPerApiStage { Stage = api.DeploymentStage });
+        var demoKeyIdByVenue = new Dictionary<string, string>();
+        foreach (var venue in props.Venues)
+        {
+            var key = new ApiKey(this, $"{venue.VenueId}-demo-key", new ApiKeyProps { ApiKeyName = $"roller-demo-{venue.VenueId}" });
+            demoPlan.AddApiKey(key);
+            demoKeyIdByVenue[venue.VenueId] = key.KeyId;
+        }
+        var demoKeys = ToJsonString(demoKeyIdByVenue);
+
         var createSale = NewFunction("CreateSale", "Roller.Api", "Roller.Api.CreateSaleFunction::Handle", Duration.Seconds(10), new()
         {
             ["SALES_TABLE"] = sales.TableName,
             ["FISCALISE_QUEUE_URL"] = fiscaliseQueue.QueueUrl,
             ["VENUE_API_KEYS"] = venueKeys,
+            ["DEMO_API_KEYS"] = demoKeys,
             ["ALLOWED_ORIGIN"] = props.AllowedOrigin,
         });
         sales.Grant(createSale, "dynamodb:PutItem", "dynamodb:GetItem");
@@ -179,6 +202,7 @@ public sealed class TillStack : Stack
         {
             ["SALES_TABLE"] = sales.TableName,
             ["VENUE_API_KEYS"] = venueKeys,
+            ["DEMO_API_KEYS"] = demoKeys,
             ["ALLOWED_ORIGIN"] = props.AllowedOrigin,
         });
         sales.Grant(getSale, "dynamodb:GetItem");
@@ -242,8 +266,14 @@ public sealed class TillStack : Stack
         TillDashboard.Add(this, new DashboardParts(
             api, createSale, worker, partner, fiscaliseQueue, fiscaliseDlq, journalQueue, journalDlq, alarms, props.Drills));
 
+        var site = TillSite.Add(this, api);
+
         new CfnOutput(this, "ApiUrl", new CfnOutputProps { Value = api.Url });
         new CfnOutput(this, "ApiKeyIds", new CfnOutputProps { Value = venueKeys });
+        new CfnOutput(this, "DemoApiKeyIds", new CfnOutputProps { Value = demoKeys });
+        new CfnOutput(this, "SiteUrl", new CfnOutputProps { Value = $"https://{site.Distribution.DistributionDomainName}" });
+        new CfnOutput(this, "SiteBucketName", new CfnOutputProps { Value = site.Bucket.BucketName });
+        new CfnOutput(this, "SiteDistributionId", new CfnOutputProps { Value = site.Distribution.DistributionId });
         new CfnOutput(this, "SalesTableName", new CfnOutputProps { Value = sales.TableName });
         new CfnOutput(this, "FiscaliseQueueUrl", new CfnOutputProps { Value = fiscaliseQueue.QueueUrl });
         new CfnOutput(this, "FiscaliseDlqUrl", new CfnOutputProps { Value = fiscaliseDlq.QueueUrl });

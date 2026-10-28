@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" width="1200" height="640" role="img" aria-label="Architecture: the till on the laptop calls API Gateway in AWS; CreateSale stores the sale in DynamoDB and queues it on the fiscalise queue; FiscaliseWorker signs it through the mock partner and queues it on the FIFO journal queue; the journal worker on the laptop reads the signed sale, numbers it in SQL Server running in Docker, writes the receipt to S3, sets the receipt number on the sale, and emails it through SES when the customer gave an address. Messages that keep failing go to a dead-letter queue, whose CloudWatch alarm emails through SNS.">
-<title>Architecture: the till on the laptop calls API Gateway in AWS; CreateSale stores the sale in DynamoDB and queues it on the fiscalise queue; FiscaliseWorker signs it through the mock partner and queues it on the FIFO journal queue; the journal worker on the laptop reads the signed sale, numbers it in SQL Server running in Docker, writes the receipt to S3, sets the receipt number on the sale, and emails it through SES when the customer gave an address. Messages that keep failing go to a dead-letter queue, whose CloudWatch alarm emails through SNS.</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" width="1200" height="640" role="img" aria-label="Architecture: the till in a browser, served locally or by CloudFront, calls API Gateway in AWS; CreateSale stores the sale in DynamoDB and queues it on the fiscalise queue; FiscaliseWorker signs it through the mock partner and queues it on the FIFO journal queue; the journal worker on the laptop reads the signed sale, numbers it in SQL Server running in Docker, writes the receipt to S3, sets the receipt number on the sale, and emails it through SES when the customer gave an address. Messages that keep failing go to a dead-letter queue, whose CloudWatch alarm emails through SNS.">
+<title>Architecture: the till in a browser, served locally or by CloudFront, calls API Gateway in AWS; CreateSale stores the sale in DynamoDB and queues it on the fiscalise queue; FiscaliseWorker signs it through the mock partner and queues it on the FIFO journal queue; the journal worker on the laptop reads the signed sale, numbers it in SQL Server running in Docker, writes the receipt to S3, sets the receipt number on the sale, and emails it through SES when the customer gave an address. Messages that keep failing go to a dead-letter queue, whose CloudWatch alarm emails through SNS.</title>
 <style>
 :root { --bg: #f5f7f9; --fg: #16202b; --muted: #566271; --box: #ffffff; --line: #aeb8c4;
   --zone-aws: #e8eef6; --zone-aws-line: #c3d0e0; --zone-local: #edf1ec; --zone-local-line: #c6d0c4;
@@ -44,7 +44,7 @@
           </defs>
 
           <rect class="zone-local" x="12" y="190" width="140" height="136" rx="10"/>
-          <text class="zl" x="24" y="210">Laptop</text>
+          <text class="zl" x="24" y="210">Browser</text>
           <polygon class="zone-aws" points="160,40 892,40 892,322 1188,322 1188,628 160,628"/>
           <text class="zl" x="172" y="60">AWS eu-west-2, RollerTill stack</text>
           <rect class="zone-local" x="900" y="40" width="288" height="274" rx="10"/>
@@ -59,7 +59,7 @@
 
           <rect class="box" x="24" y="230" width="116" height="56" rx="6"/>
           <text class="n" x="82" y="254" text-anchor="middle">Angular till</text>
-          <text class="s" x="82" y="272" text-anchor="middle">localhost:4200</text>
+          <text class="s" x="82" y="272" text-anchor="middle">local or CloudFront</text>
           <rect class="box" x="172" y="230" width="116" height="56" rx="6"/>
           <text class="n" x="230" y="254" text-anchor="middle">API Gateway</text>
           <text class="s" x="230" y="272" text-anchor="middle">key per venue</text>

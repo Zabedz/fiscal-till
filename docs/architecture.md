@@ -1,6 +1,6 @@
 # Architecture
 
-![The till on the laptop calls API Gateway; CreateSale stores the sale and queues it; FiscaliseWorker signs it through the mock partner and queues it for the journal; the journal worker on the laptop numbers it in SQL Server, writes the receipt to S3 and emails it when the customer gave an address.](diagrams/architecture.svg)
+![The till in a browser, served locally or by CloudFront, calls API Gateway; CreateSale stores the sale and queues it; FiscaliseWorker signs it through the mock partner and queues it for the journal; the journal worker on the laptop numbers it in SQL Server, writes the receipt to S3 and emails it when the customer gave an address.](diagrams/architecture.svg)
 
 Arrows in the text colour carry every sale. Red arrows are the failure path: dashed into and out of the dead-letter
 queues, solid from the alarm to the email.
@@ -25,7 +25,7 @@ queues, solid from the alarm to the email.
 
 | Part | Runs on | Code |
 | --- | --- | --- |
-| Till | Browser, `ng serve` on localhost:4200 | [web/till/src/app](https://github.com/Zabedz/fiscal-till/tree/main/web/till/src/app) |
+| Till | Browser: `ng serve` on localhost:4200, or CloudFront with `/sales` passed to the API | [web/till/src/app](https://github.com/Zabedz/fiscal-till/tree/main/web/till/src/app), [TillSite.cs](https://github.com/Zabedz/fiscal-till/blob/main/infra/Roller.Infra/TillSite.cs) |
 | API Gateway, usage plan, keys | AWS | [TillStack.cs](https://github.com/Zabedz/fiscal-till/blob/main/infra/Roller.Infra/TillStack.cs) |
 | CreateSale, GetSale | Lambda, .NET 10 on arm64, 1024 MB | [src/Roller.Api](https://github.com/Zabedz/fiscal-till/tree/main/src/Roller.Api) |
 | Sale model, VAT, validation, DynamoDB store | Library used by CreateSale, GetSale, FiscaliseWorker, the journal worker and the CDK app | [src/Roller.Core](https://github.com/Zabedz/fiscal-till/tree/main/src/Roller.Core) |

@@ -23,9 +23,10 @@ CloudFormation names the resource `<Stack>-<ConstructId><hash>-<suffix>`: the fi
 
 | In the console | Settings |
 | --- | --- |
-| REST API `roller-till`, stage `live` | Default method throttling: 200 requests/s, burst 400, for each method. CORS for `http://localhost:4200` only. No access logs. |
+| REST API `roller-till`, stage `live` | Default method throttling: 200 requests/s, burst 400, for each method. CORS for `http://localhost:4200` only; the CloudFront till calls it on its own address. No access logs. |
 | Usage plan `roller-venues` | Holds every venue's key. Per key: 50 requests/s, burst 100, 300,000 a day. |
 | API keys `roller-paris-01`, `roller-berlin-01`, `roller-vienna-01` | One per venue in [config/venues.json](https://github.com/Zabedz/fiscal-till/blob/main/config/venues.json). AWS generates the values; `scripts/till-config.sh` fetches them. |
+| Usage plan `roller-demo` and keys `roller-demo-paris-01`, `roller-demo-berlin-01`, `roller-demo-vienna-01` | Per key: 5 requests/s, burst 10, 10,000 a day. Published in the CloudFront till's `config.json`; `scripts/publish-till.sh` fetches them. |
 | Gateway responses `DEFAULT_4XX`, `DEFAULT_5XX` | Add CORS headers so the browser can read API Gateway's own 403 and 429. |
 | Resources `/sales` (POST), `/sales/{saleId}` (GET) | API key required, Lambda proxy integration. |
 
@@ -57,10 +58,11 @@ CloudFormation names the resource `<Stack>-<ConstructId><hash>-<suffix>`: the fi
 | SSM parameter `/roller/partner/switches` | Partner drill switches; `scripts/partner.sh` overwrites it. |
 | Secrets `PartnerApiKey...`, `PartnerSigningKey...` | CloudFormation creates the values, so they change after every teardown. |
 | SES identity: the alert address (RollerGuardrails, kept on teardown) | Receipt sender and, in the SES sandbox, the only allowed recipient. |
+| CloudFront distribution (comment `roller-till site`) and S3 `rollertill-site...` | [TillSite.cs](https://github.com/Zabedz/fiscal-till/blob/main/infra/Roller.Infra/TillSite.cs): the till's build from the private bucket through origin access control; `/sales*` passed uncached to the API's `live` stage. Emptied and deleted with the stack. |
 | CloudWatch dashboard `roller-till` | [TillDashboard.cs](https://github.com/Zabedz/fiscal-till/blob/main/infra/Roller.Infra/TillDashboard.cs): alarm status, then queues, workers and API, with drill windows marked. GetSale is not graphed. |
 
-Stack outputs (CloudFormation, RollerTill, Outputs) hold the API URL, key ids, table and bucket names, queue URLs and the
-partner URL. The scripts read them with `describe-stacks`.
+Stack outputs (CloudFormation, RollerTill, Outputs) hold the API URL, venue and demo key ids, table and bucket names, queue
+URLs, the partner URL and the site's URL, bucket and distribution id. The scripts read them with `describe-stacks`.
 
 ## Outside the stacks
 

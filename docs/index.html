@@ -101,7 +101,7 @@ footer { max-width: 1120px; margin: 64px auto 0; color: var(--muted); font-size:
       </ol>
     </div>
     <figure>
-      <div class="diagram" tabindex="0" role="region" aria-label="Architecture diagram"><img src="diagrams/architecture.svg" alt="Architecture: the till on the laptop calls API Gateway; CreateSale stores the sale in DynamoDB and queues it; FiscaliseWorker signs it through the mock partner and queues it for the journal; the journal worker on the laptop reads the sale, numbers it in SQL Server, writes the receipt to S3 and emails it when the customer gave an address. Messages that keep failing go to a dead-letter queue, whose CloudWatch alarm emails through SNS." width="1200" height="640"></div>
+      <div class="diagram" tabindex="0" role="region" aria-label="Architecture diagram"><img src="diagrams/architecture.svg" alt="Architecture: the till in a browser, served locally or by CloudFront, calls API Gateway; CreateSale stores the sale in DynamoDB and queues it; FiscaliseWorker signs it through the mock partner and queues it for the journal; the journal worker on the laptop reads the sale, numbers it in SQL Server, writes the receipt to S3 and emails it when the customer gave an address. Messages that keep failing go to a dead-letter queue, whose CloudWatch alarm emails through SNS." width="1200" height="640"></div>
       <figcaption>Arrows in the text colour carry every sale. Red arrows are the failure path, ending in an email from a
         CloudWatch alarm.</figcaption>
     </figure>
