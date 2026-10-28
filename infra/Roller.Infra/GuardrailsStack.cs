@@ -26,7 +26,7 @@ public sealed class GuardrailsStack : Stack
         var alarms = new Topic(this, "AlarmTopic", new TopicProps
         {
             TopicName = AlarmTopicName,
-            DisplayName = "Roller alarms",
+            DisplayName = "Till alarms",
         });
         alarms.AddSubscription(new EmailSubscription(props.AlertEmail));
 

@@ -75,7 +75,7 @@ internal static class TillDashboard
             {
                 Width = 16,
                 Height = 3,
-                Markdown = "## Roller till pipeline\n" +
+                Markdown = "## Till pipeline\n" +
                     "Tills post sales to the API; the fiscalise worker gets each one signed by the mock partner; the local journal worker " +
                     "numbers it in SQL Server. Blue lines mark the start of each drill, grey lines its end.",
             }),

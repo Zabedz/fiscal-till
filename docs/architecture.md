@@ -25,15 +25,15 @@ queues, solid from the alarm to the email.
 
 | Part | Runs on | Code |
 | --- | --- | --- |
-| Till | Browser, `ng serve` on localhost:4200 | [web/till/src/app](https://github.com/Zabedz/fiscal-till-pipeline/tree/main/web/till/src/app) |
-| API Gateway, usage plan, keys | AWS | [TillStack.cs](https://github.com/Zabedz/fiscal-till-pipeline/blob/main/infra/Roller.Infra/TillStack.cs) |
-| CreateSale, GetSale | Lambda, .NET 10 on arm64, 1024 MB | [src/Roller.Api](https://github.com/Zabedz/fiscal-till-pipeline/tree/main/src/Roller.Api) |
-| Sale model, VAT, validation, DynamoDB store | Library used by CreateSale, GetSale, FiscaliseWorker, the journal worker and the CDK app | [src/Roller.Core](https://github.com/Zabedz/fiscal-till-pipeline/tree/main/src/Roller.Core) |
-| FiscaliseWorker | Lambda with an SQS trigger | [src/Roller.Fiscalise](https://github.com/Zabedz/fiscal-till-pipeline/tree/main/src/Roller.Fiscalise) |
-| Mock partner | Lambda behind a function URL, with its own contracts | [src/Roller.MockPartner](https://github.com/Zabedz/fiscal-till-pipeline/tree/main/src/Roller.MockPartner) |
-| Journal worker | .NET worker service on the laptop, started with `dotnet run` | [src/Roller.Journal](https://github.com/Zabedz/fiscal-till-pipeline/tree/main/src/Roller.Journal) |
-| SQL Server 2022 | Docker on the laptop | [db/schema.sql](https://github.com/Zabedz/fiscal-till-pipeline/blob/main/db/schema.sql), [db/compose.yaml](https://github.com/Zabedz/fiscal-till-pipeline/blob/main/db/compose.yaml) |
-| Infrastructure | CDK in C# | [infra/Roller.Infra](https://github.com/Zabedz/fiscal-till-pipeline/tree/main/infra/Roller.Infra) |
+| Till | Browser, `ng serve` on localhost:4200 | [web/till/src/app](https://github.com/Zabedz/fiscal-till/tree/main/web/till/src/app) |
+| API Gateway, usage plan, keys | AWS | [TillStack.cs](https://github.com/Zabedz/fiscal-till/blob/main/infra/Roller.Infra/TillStack.cs) |
+| CreateSale, GetSale | Lambda, .NET 10 on arm64, 1024 MB | [src/Roller.Api](https://github.com/Zabedz/fiscal-till/tree/main/src/Roller.Api) |
+| Sale model, VAT, validation, DynamoDB store | Library used by CreateSale, GetSale, FiscaliseWorker, the journal worker and the CDK app | [src/Roller.Core](https://github.com/Zabedz/fiscal-till/tree/main/src/Roller.Core) |
+| FiscaliseWorker | Lambda with an SQS trigger | [src/Roller.Fiscalise](https://github.com/Zabedz/fiscal-till/tree/main/src/Roller.Fiscalise) |
+| Mock partner | Lambda behind a function URL, with its own contracts | [src/Roller.MockPartner](https://github.com/Zabedz/fiscal-till/tree/main/src/Roller.MockPartner) |
+| Journal worker | .NET worker service on the laptop, started with `dotnet run` | [src/Roller.Journal](https://github.com/Zabedz/fiscal-till/tree/main/src/Roller.Journal) |
+| SQL Server 2022 | Docker on the laptop | [db/schema.sql](https://github.com/Zabedz/fiscal-till/blob/main/db/schema.sql), [db/compose.yaml](https://github.com/Zabedz/fiscal-till/blob/main/db/compose.yaml) |
+| Infrastructure | CDK in C# | [infra/Roller.Infra](https://github.com/Zabedz/fiscal-till/tree/main/infra/Roller.Infra) |
 
 ## Stacks
 
@@ -56,4 +56,4 @@ queues, solid from the alarm to the email.
 | One message per receive in the journal worker | SQS counts every returned message as a receive, so a batch would dead-letter sales queued behind a failing one. | `JournalWorker.cs` |
 | Every journal step but the email safe to repeat | SQL returns the existing number for a known sale, S3 writes with `If-None-Match: *`, and the DynamoDB update checks the number. The email goes twice if the worker dies between sending it and saving `EmailedAt`. | `JournalProcessor.cs` |
 
-Known limits are in the [top-level README](https://github.com/Zabedz/fiscal-till-pipeline#known-limits).
+Known limits are in the [top-level README](https://github.com/Zabedz/fiscal-till#known-limits).

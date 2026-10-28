@@ -20,7 +20,7 @@ that do not exist.
 
 ## Partner switches
 
-[scripts/partner.sh](https://github.com/Zabedz/fiscal-till-pipeline/blob/main/scripts/partner.sh) writes `{latencyMs, errorRate, outage}` to the SSM parameter
+[scripts/partner.sh](https://github.com/Zabedz/fiscal-till/blob/main/scripts/partner.sh) writes `{latencyMs, errorRate, outage}` to the SSM parameter
 `/roller/partner/switches`. Each partner instance caches it for 5 s.
 
 | Switch | Partner behaviour |
@@ -44,4 +44,4 @@ git ignores, and exits 1 if an invariant fails.
 | Timings | For sales made inside each drill's window: seconds to the partner's signature and to the receipt number |
 | Cold starts | Logs Insights over each Lambda's `platform.report` records |
 
-Results and findings are in the [top-level README](https://github.com/Zabedz/fiscal-till-pipeline#results).
+Results and findings are in the [top-level README](https://github.com/Zabedz/fiscal-till#results).

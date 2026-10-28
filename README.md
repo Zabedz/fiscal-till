@@ -1,8 +1,11 @@
-# roller
+# Fiscal till pipeline
 
 Fiscal receipts for venue tills in France, Germany and Austria. Each sale is priced under its market's VAT rules, signed by a
 fiscal partner, numbered without gaps per till in a SQL Server journal, and its receipt stored in S3 and emailed. C# on AWS
 Lambda, CDK in C#, an Angular till.
+
+Drill results with dashboard graphs: https://zabedz.github.io/fiscal-till/. Notes on each part:
+[docs/](docs/README.md). Not affiliated with ROLLER.
 
 ```mermaid
 flowchart LR
@@ -38,13 +41,13 @@ flowchart LR
 
 ## Run
 
-Needs the .NET 10 SDK, Node 24, Docker, the AWS CDK CLI, k6, and an AWS CLI profile named `roller`. Everything deploys to
-eu-west-2.
+Needs the .NET SDK 10.0.403 or later, Node 24, Python 3.11 or later, Docker, the AWS CLI v2 with a profile named `roller`,
+the AWS CDK CLI and k6. Everything deploys to eu-west-2.
 
 ```sh
 export AWS_PROFILE=roller
-cdk bootstrap                                   # once per account
 echo '{"alertEmail": "you@example.com"}' > cdk.context.json   # alarm and SES address; journal.sh reads it too
+cdk bootstrap                                   # once per account in eu-west-2
 cdk deploy --all                                # confirm the SNS and SES emails AWS sends
 scripts/journal-db.sh up                        # SQL Server in Docker, schema applied
 scripts/journal.sh                              # journal worker, leave it running
@@ -60,6 +63,7 @@ scripts/till-config.sh && (cd web/till && npm ci && npm start)   # till on http:
 | Check invariants after drills | `python3 scripts/verify.py` |
 | Mark drills on the dashboard | `cdk deploy RollerTill` (reads `load/drills.json`) |
 | Tear down | `scripts/teardown.sh && scripts/journal-db.sh down` |
+| Remove everything | The above, then `aws cloudformation update-termination-protection --no-enable-termination-protection --stack-name RollerGuardrails` and `aws cloudformation delete-stack --stack-name RollerGuardrails`; `docker compose --env-file .env -f db/compose.yaml down -v` deletes the journal data |
 
 `scripts/teardown.sh` deletes RollerTill. RollerGuardrails (budget, alarm topic, SES identity) has termination protection and
 stays.
@@ -81,10 +85,10 @@ k6 drove 50 tills (17 Paris, 17 Berlin, 16 Vienna) on 27 October 2026, resending
 "Signed" is the time from sale to partner signature. The first five drills ran with 4 journal consumers, which fell
 behind; see the findings.
 
-After the drills, with 23,277 sales:
+After the drills, with 23,277 sales (23,223 from the drills, 54 from a smoke run and manual testing):
 
 - k6's accepted count equals the sales stored for every run, and each sale's receipt number in DynamoDB equals the journal's.
-- 51 tills, 23,277 receipts, no missing or repeated numbers.
+- 51 tills (the 50 k6 tills, plus `vienna-01-T17` from the burst drill), 23,277 receipts, no missing or repeated numbers.
 - VAT per sale and rate in the journal equals DynamoDB's for all 23,277 sales.
 - No sale left PENDING or signed without a receipt.
 

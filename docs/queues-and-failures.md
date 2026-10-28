@@ -29,8 +29,8 @@ receives it and gets the sale signed. Signing is what NF525, KassenSichV and RKS
 | Sale already FAILED | Nothing | Deleted | Unchanged |
 | Invocation out of time | Report it unfinished | Back after 90 s | Unchanged |
 
-Code: [FiscaliseProcessor.cs](https://github.com/Zabedz/fiscal-till-pipeline/blob/main/src/Roller.Fiscalise/FiscaliseProcessor.cs),
-[Backoff.cs](https://github.com/Zabedz/fiscal-till-pipeline/blob/main/src/Roller.Fiscalise/Backoff.cs), [PartnerClient.cs](https://github.com/Zabedz/fiscal-till-pipeline/blob/main/src/Roller.Fiscalise/PartnerClient.cs).
+Code: [FiscaliseProcessor.cs](https://github.com/Zabedz/fiscal-till/blob/main/src/Roller.Fiscalise/FiscaliseProcessor.cs),
+[Backoff.cs](https://github.com/Zabedz/fiscal-till/blob/main/src/Roller.Fiscalise/Backoff.cs), [PartnerClient.cs](https://github.com/Zabedz/fiscal-till/blob/main/src/Roller.Fiscalise/PartnerClient.cs).
 
 - A sale's 10th receive comes 375 to 450 s after it was queued. If the partner is still down then, the message moves to
   the DLQ on the next receive, about a minute later, and needs a redrive.
@@ -49,7 +49,7 @@ catches repeats.
 | --- | --- |
 | Visibility timeout | 60 s |
 | Receives before the DLQ | 5 |
-| Worker | 16 consumers by default (`JOURNAL_CONSUMERS`, [JournalSettings.cs](https://github.com/Zabedz/fiscal-till-pipeline/blob/main/src/Roller.Journal/JournalSettings.cs)), 1 message per receive, 20 s long poll ([JournalWorker.cs](https://github.com/Zabedz/fiscal-till-pipeline/blob/main/src/Roller.Journal/JournalWorker.cs)) |
+| Worker | 16 consumers by default (`JOURNAL_CONSUMERS`, [JournalSettings.cs](https://github.com/Zabedz/fiscal-till/blob/main/src/Roller.Journal/JournalSettings.cs)), 1 message per receive, 20 s long poll ([JournalWorker.cs](https://github.com/Zabedz/fiscal-till/blob/main/src/Roller.Journal/JournalWorker.cs)) |
 | Unreadable, or sale not SIGNED | Visible at once, DLQ within seconds |
 | SQL deadlock victim (error 1205) | Retried in process, 3 attempts in all |
 | Any other exception | Left undeleted, back after 60 s |
