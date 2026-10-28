@@ -3,8 +3,9 @@
 ## The fiscalise queue
 
 The SQS queue between taking a sale and signing it. CreateSale sends `{saleId, venueId, tillId}`; FiscaliseWorker
-receives it and gets the sale signed. Signing is what NF525, KassenSichV and RKSV require of every sale (see
-[domain.md](domain.md)). The queue lets the till keep selling while the partner is slow or down.
+receives it and gets the sale signed. The queue keeps the till answering while the partner is slow or down. That is a
+simplification: all three countries secure a sale before its receipt. Germany and Austria set an outage procedure, and
+certified French software signs locally when offline ([compliance.md](compliance.md)).
 
 | Setting | Value |
 | --- | --- |

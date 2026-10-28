@@ -10,6 +10,7 @@ Running the pipeline and the drill results: [top-level README](https://github.co
 | How were the load and failure drills run? | [drills.md](drills.md) |
 | Where is the code for something, and how are the tests laid out? | [codebase.md](codebase.md) |
 | What do NF525, TSE, RKSV, business day and Z-report mean here? | [domain.md](domain.md) |
+| How does the signing compare with the French, German and Austrian rules? | [compliance.md](compliance.md) |
 
 Diagrams: [architecture](diagrams/architecture.svg), [fiscalise retries](diagrams/fiscalise-retries.svg),
 [drills](diagrams/drills.svg).

@@ -10,7 +10,7 @@ public sealed class GermanRules(MarketConfig config) : MarketRules(config)
 
     public override IReadOnlySet<decimal> FiscalRates { get; } = new HashSet<decimal> { GeneralRate, ReducedRate, ZeroRate };
 
-    // Gross per DSFinV-K VAT key (general, reduced, two agricultural averages, zero), then the payment.
+    // Gross per DSFinV-K Kassenbeleg-V1 container (general, reduced, two agricultural averages, zero), then the payment.
     public override string FiscalPayload(Sale sale, Venue venue)
     {
         RequireFiscalFields(sale);

@@ -47,8 +47,8 @@ queues, solid from the alarm to the email.
 | Choice | Reason | Code |
 | --- | --- | --- |
 | Sale id derived from venue and `Idempotency-Key` | A resend finds the first copy; the conditional put decides which request was first. A stored hash of the request gives 422 to the same key with a different valid body. | `SaleIds.cs`, `SaleStore.PutIfAbsentAsync`, `CreateSaleService.cs` |
-| Queue between taking a sale and signing it | The till gets 202 in about 100 ms whatever the partner is doing. | `CreateSaleService.cs` |
-| Standard fiscalise queue, FIFO journal queue | Signing works in any order. Numbering takes each till's sales one at a time, in the order they reach the journal queue. | `TillStack.cs` |
+| Queue between taking a sale and signing it | The till gets 202 in about 100 ms whatever the partner is doing. Each country secures a sale before its receipt, so production signs at payment ([compliance.md](compliance.md)). | `CreateSaleService.cs` |
+| Standard fiscalise queue, FIFO journal queue | The mock signs in any order. Numbering takes each till's sales one at a time, in the order they reach the journal queue. All three countries sign each till's sales in order, so production signs at payment. | `TillStack.cs` |
 | Optimistic lock on `Status` and `Version` | Two workers holding copies of one message cannot both move the sale out of `PENDING`. | `SaleStore.MarkSignedAsync` |
 | Partial batch failures | A failing sale is retried alone, leaving the other nine in its batch done. | `FiscaliseFunction.cs` |
 | Backoff through message visibility | The wait happens on the queue at no compute cost. | `FiscaliseProcessor.cs`, `Backoff.cs` |
@@ -56,4 +56,5 @@ queues, solid from the alarm to the email.
 | One message per receive in the journal worker | SQS counts every returned message as a receive, so a batch would dead-letter sales queued behind a failing one. | `JournalWorker.cs` |
 | Every journal step but the email safe to repeat | SQL returns the existing number for a known sale, S3 writes with `If-None-Match: *`, and the DynamoDB update checks the number. The email goes twice if the worker dies between sending it and saving `EmailedAt`. | `JournalProcessor.cs` |
 
-Known limits are in the [top-level README](https://github.com/Zabedz/fiscal-till#known-limits).
+Known limits are in the [top-level README](https://github.com/Zabedz/fiscal-till#known-limits), and the gaps against each
+country's rules in [compliance.md](compliance.md).

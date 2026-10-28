@@ -138,8 +138,8 @@ footer { max-width: 1120px; margin: 64px auto 0; color: var(--muted); font-size:
       </div>
       <figcaption>The poison messages in the fiscalise dead-letter queue. By size: 8 bytes is <code>not json</code>, 13 is
         <code>{"saleId":42}</code>, 22 is <code>{"venueId":"paris-01"}</code>, and 81 and 82 are messages for sale ids that
-        do not exist. SQS moves a message on the receive after its 10th failure; counts above 11 come from inspecting the
-        queue.</figcaption>
+        do not exist. Receive counts are the worker's 10 receives plus one
+        for each console poll of the queue, this one included.</figcaption>
     </figure>
     <figure class="shot">
       <img src="assets/screenshots/alarm-email.png" alt="CloudWatch alarm email: FiscaliseDlqNotEmpty entered ALARM at 20:41:49 UTC on 27 October 2026 because the fiscalise dead-letter queue held 5 messages in the minute from 20:39, above the threshold of 0. The alarm reads the queue's ApproximateNumberOfMessagesVisible, maximum per 60 s, with missing data not breaching." width="1808" height="644" loading="lazy">
@@ -242,9 +242,11 @@ footer { max-width: 1120px; margin: 64px auto 0; color: var(--muted); font-size:
   <section class="prose">
     <h2>Known limits</h2>
     <ul>
-      <li>The signing partner is a mock, and signing happens after the till accepts the sale. KassenSichV and RKSV expect
-        the signature at the time of sale.</li>
-      <li>Receipt numbers are assigned after signing; RKSV and NF525 chain the number into the signature.</li>
+      <li>The signing partner is one mock for all three markets, and a sale is signed after the till accepts it. France,
+        Germany and Austria each secure a sale before its receipt.</li>
+      <li>The signed data, receipt content, closures and exports fall short of each country's rules, and the outage receipts
+        and till registration that Germany and Austria require are missing; <a href="compliance.html">the compliance
+        notes</a> compare them country by country.</li>
       <li>API keys meter each venue. Anyone holding a key can post sales as that venue.</li>
       <li>The journal worker and SQL Server ran on a laptop.</li>
     </ul>
@@ -260,6 +262,7 @@ footer { max-width: 1120px; margin: 64px auto 0; color: var(--muted); font-size:
       <li><a href="drills.html">Drills</a>: how each drill injected its fault, and what the check compares.</li>
       <li><a href="codebase.html">Codebase</a>: directories, key files, scripts and tests.</li>
       <li><a href="domain.html">Domain</a>: NF525, KassenSichV, RKSV, VAT rates and API answers.</li>
+      <li><a href="compliance.html">Compliance</a>: each country's fiscal rules against this repo, and VAT by venue type.</li>
     </ul>
   </section>
 </main>

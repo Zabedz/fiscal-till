@@ -134,15 +134,16 @@ After the drills, with 23,277 sales (23,223 from the drills, 54 from a smoke run
 
 ## Known limits
 
-- The partner is a mock. Real ones (fiskaly for DE and AT, NF525-certified software for FR) need onboarding and certification.
-- Tax rules are simplified: per-line rounding, a few categories per market, no discounts, refunds or tips.
-- CreateSale writes the sale and sends the queue message as two calls. A crash between them leaves a PENDING sale nobody
-  signs. The fix is an outbox: DynamoDB Streams feeding the queue.
-- Receipt numbers are assigned after signing. RKSV (AT) and NF525 (FR) chain the number into the signature, so production
-  numbers before signing.
-- Signing happens after the till has accepted the sale. KassenSichV and RKSV expect the signature at the time of sale,
-  and selling while the signer is down is allowed only under each regime's outage procedure.
-- The journal numbers sales in queue arrival order, which can differ from the partner's signature counter for the same till.
+- The signing partner is one mock for all three markets, and the sale is signed after the till accepts it. Each country
+  secures the sale before its receipt and requires more: signed data, receipt content, closures and exports, plus outage
+  receipts and till registration in Germany and Austria. [docs/compliance.md](docs/compliance.md) compares each country's
+  rules with this repo.
+- VAT categories assume an attraction-type venue, VAT is rounded per line, and there are no discounts, refunds or tips.
+- CreateSale writes the sale and sends the queue message as two calls. A crash between them leaves the sale PENDING until
+  the till resends it, since a replay queues a PENDING sale again; if the till's stored copy is lost, nobody signs it. The
+  fix is an outbox: DynamoDB Streams feeding the queue.
+- The journal numbers sales after signing, in queue arrival order, which can differ from the partner's counter for the
+  same till. Austria and France sign a sequential number and chain each receipt to the previous signature.
 - The receipt email is sent before `EmailedAt` is saved, so a crash in between sends it twice.
 - API keys only meter each venue. Anyone holding a key can post sales; production needs an authorizer (Cognito or IAM).
 - The journal worker runs on a laptop against SQL Server in Docker, emulated on Apple Silicon. Production would run it on ECS

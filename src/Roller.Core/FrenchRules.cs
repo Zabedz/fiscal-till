@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace Roller.Core;
 
-/// <summary>France (NF525). Mock of the per-rate totals a certified till signs and chains.</summary>
+/// <summary>France (NF525). Mock of the per-rate totals a certified till signs.</summary>
 [Market("FR")]
 public sealed class FrenchRules(MarketConfig config) : MarketRules(config)
 {

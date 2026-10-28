@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace Roller.Core;
 
-/// <summary>Austria (RKSV). Mock of the amount fields in the machine-readable receipt code.</summary>
+/// <summary>Austria (RKSV). Mock of the signed receipt data, without the turnover counter, certificate serial or chain.</summary>
 [Market("AT")]
 public sealed class AustrianRules(MarketConfig config) : MarketRules(config)
 {
