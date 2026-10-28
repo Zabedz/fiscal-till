@@ -51,6 +51,10 @@ td:first-child { font-weight: 600; }
 .graphs figure { min-width: 0; }
 .graphs figure:first-child { grid-column: 1 / -1; }
 .graphs figure:first-child img { max-width: 1100px; }
+.shot img { display: block; width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 6px; }
+.pair { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; align-items: start; }
+.pair img { min-width: 0; }
+@media (max-width: 760px) { .pair { grid-template-columns: minmax(0, 1fr); } }
 .graphs img { display: block; width: 100%; height: auto; background: #ffffff; border: 1px solid var(--rule); border-radius: 6px; }
 @media (max-width: 760px) { .graphs { grid-template-columns: minmax(0, 1fr); } }
 footer { max-width: 1120px; margin: 64px auto 0; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--rule); padding-top: 16px; }
@@ -74,6 +78,12 @@ footer { max-width: 1120px; margin: 64px auto 0; color: var(--muted); font-size:
       <a href="#notes">All notes</a>
     </p>
   </header>
+
+  <figure class="shot">
+    <img src="assets/screenshots/till-receipt.png" alt="The Angular till after a sale in Paris on till T01: two adult entries and a glass of wine, 64.50 euros paid by card. The receipt shows VAT at 20% and 10%, the signature from device paris-01-T01, transaction 4, and receipt number 00000004; beside it the trail reads accepted, signed and numbered." width="1440" height="900">
+    <figcaption>The till after a sale: accepted by the API, signed by the till's device at the partner, then numbered
+      00000004 in the journal. Prices, VAT and dates follow the venue's market.</figcaption>
+  </figure>
 
   <section>
     <div class="prose">
@@ -121,6 +131,21 @@ footer { max-width: 1120px; margin: 64px auto 0; color: var(--muted); font-size:
         </tbody>
       </table>
     </div>
+    <figure class="shot">
+      <div class="pair">
+        <img src="assets/screenshots/dlq-messages.png" alt="The fiscalise dead-letter queue in the SQS console: 5 messages, all sent at 20:38 UTC on 27 October 2026, of 82, 8, 81, 13 and 22 bytes, with receive counts from 11 to 14." width="2000" height="659" loading="lazy">
+        <img src="assets/screenshots/dlq-body.png" alt="One of the dead-lettered messages opened in the SQS console; its body is the text: not json." width="1644" height="546" loading="lazy">
+      </div>
+      <figcaption>The poison messages in the fiscalise dead-letter queue. By size: 8 bytes is <code>not json</code>, 13 is
+        <code>{"saleId":42}</code>, 22 is <code>{"venueId":"paris-01"}</code>, and 81 and 82 are messages for sale ids that
+        do not exist. SQS moves a message on the receive after its 10th failure; counts above 11 come from inspecting the
+        queue.</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="assets/screenshots/alarm-email.png" alt="CloudWatch alarm email: FiscaliseDlqNotEmpty entered ALARM at 20:41:49 UTC on 27 October 2026 because the fiscalise dead-letter queue held 5 messages in the minute from 20:39, above the threshold of 0. The alarm reads the queue's ApproximateNumberOfMessagesVisible, maximum per 60 s, with missing data not breaching." width="1808" height="644" loading="lazy">
+      <figcaption>The email from the poison drill, cropped to leave out the account details. The 20:39 datapoint showed 5
+        messages, and the alarm fired at 20:41:49.</figcaption>
+    </figure>
   </section>
 
   <section>
